@@ -1,0 +1,31 @@
+server:
+  forward-headers-strategy: native
+
+spring:
+  application:
+    name: matchmyduo
+  profiles:
+    active: dev
+    include: secret
+
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        use_sql_comments: true
+        default_batch_fetch_size: 100
+    defer-datasource-initialization: false
+
+springdoc:
+  default-produces-media-type: application/json
+
+logging:
+  level:
+    com.matchmyduo: DEBUG
+
+custom:
+  jwt:
+    expireSeconds: "#{30 * 60}"
+    secretPattern: ${JWT_SECRET}
