@@ -62,4 +62,11 @@ public class PartyMember {
         this.state = PartyMemberState.LEFT;
         this.leftAt = LocalDateTime.now();
     }
+
+    // 나갔던 유저가 다시 들어올 때 사용
+    public void rejoinParty() {
+        this.state = PartyMemberState.JOINED;
+        this.joinedAt = LocalDateTime.now();
+        this.leftAt = null;
+    }
 }
