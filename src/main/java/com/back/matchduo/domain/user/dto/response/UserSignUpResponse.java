@@ -13,7 +13,7 @@ public record UserSignUpResponse(
         @Schema(description = "인증번호", example = "asd123")
         String verification_code
 ) {
-    public static UserSignUpResponse from(User user) {
+    public static UserSignUpResponse of(User user) {
         return new UserSignUpResponse(
                 user.getEmail(),
                 user.getPassword(),

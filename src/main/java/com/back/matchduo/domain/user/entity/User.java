@@ -46,9 +46,6 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedDate;
 
-    @Column(nullable = false)
-    private Boolean agree_termsofuse = true;
-
     @Column(length = 100, nullable = false)
     private String verification_code;
 }
