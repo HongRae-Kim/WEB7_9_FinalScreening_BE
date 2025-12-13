@@ -1,4 +1,4 @@
 package com.back.matchduo.domain.user.dto.response;
 
-public class TokenRefreshResponse {
+public record TokenRefreshResponse(String accessToken, String refreshToken) {
 }
