@@ -1,7 +1,9 @@
 package com.back.matchduo.domain.gameaccount.service;
 
 import com.back.matchduo.domain.gameaccount.client.RiotApiClient;
-import com.back.matchduo.domain.gameaccount.dto.GameAccountDto;
+import com.back.matchduo.domain.gameaccount.dto.request.GameAccountCreateRequest;
+import com.back.matchduo.domain.gameaccount.dto.request.GameAccountUpdateRequest;
+import com.back.matchduo.domain.gameaccount.dto.response.GameAccountResponse;
 import com.back.matchduo.domain.gameaccount.dto.RiotApiDto;
 import com.back.matchduo.domain.gameaccount.entity.GameAccount;
 import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
@@ -11,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -28,7 +32,7 @@ public class GameAccountService {
      * @param request 게임 타입, 닉네임, 태그, 유저 ID를 포함한 요청 DTO
      * @return 생성된 게임 계정 정보
      */
-    public GameAccountDto.Response createGameAccount(GameAccountDto.CreateRequest request) {
+    public GameAccountResponse createGameAccount(GameAccountCreateRequest request) {
         // 임시: User 조회 (나중에 인증 정보로 대체)
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다. userId: " + request.getUserId()));
@@ -68,7 +72,7 @@ public class GameAccountService {
 
         GameAccount savedGameAccount = gameAccountRepository.save(gameAccount);
 
-        return GameAccountDto.Response.builder()
+        return GameAccountResponse.builder()
                 .gameAccountId(savedGameAccount.getGameAccountId())
                 .gameNickname(savedGameAccount.getGameNickname())
                 .gameTag(savedGameAccount.getGameTag())
@@ -84,17 +88,78 @@ public class GameAccountService {
      * @return 게임 계정 정보
      */
     @Transactional(readOnly = true)
-    public GameAccountDto.Response getGameAccount(Long gameAccountId) {
+    public GameAccountResponse getGameAccount(Long gameAccountId) {
         GameAccount gameAccount = gameAccountRepository.findById(gameAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("게임 계정을 찾을 수 없습니다. gameAccountId: " + gameAccountId));
 
-        return GameAccountDto.Response.builder()
+        return GameAccountResponse.builder()
                 .gameAccountId(gameAccount.getGameAccountId())
                 .gameNickname(gameAccount.getGameNickname())
                 .gameTag(gameAccount.getGameTag())
                 .gameType(gameAccount.getGameType())
                 .puuid(gameAccount.getPuuid())
                 .userId(gameAccount.getUser().getId())
+                .build();
+    }
+
+    /**
+     * 사용자의 모든 게임 계정 조회
+     * @param userId 유저 ID
+     * @return 게임 계정 목록
+     */
+    @Transactional(readOnly = true)
+    public List<GameAccountResponse> getUserGameAccounts(Long userId) {
+        List<GameAccount> gameAccounts = gameAccountRepository.findByUser_Id(userId);
+        
+        return gameAccounts.stream()
+                .map(gameAccount -> GameAccountResponse.builder()
+                        .gameAccountId(gameAccount.getGameAccountId())
+                        .gameNickname(gameAccount.getGameNickname())
+                        .gameTag(gameAccount.getGameTag())
+                        .gameType(gameAccount.getGameType())
+                        .puuid(gameAccount.getPuuid())
+                        .userId(gameAccount.getUser().getId())
+                        .build())
+                .toList();
+    }
+
+    /**
+     * 게임 계정 수정 (닉네임, 태그, puuid 업데이트)
+     * @param gameAccountId 게임 계정 ID
+     * @param request 수정할 닉네임과 태그
+     * @return 수정된 게임 계정 정보
+     */
+    public GameAccountResponse updateGameAccount(Long gameAccountId, GameAccountUpdateRequest request) {
+        GameAccount gameAccount = gameAccountRepository.findById(gameAccountId)
+                .orElseThrow(() -> new IllegalArgumentException("게임 계정을 찾을 수 없습니다. gameAccountId: " + gameAccountId));
+
+        // Riot API 호출하여 새로운 puuid 가져오기
+        String puuid = null;
+        try {
+            RiotApiDto.AccountResponse accountResponse = riotApiClient.getAccountByRiotId(
+                    request.getGameNickname(),
+                    request.getGameTag()
+            );
+            puuid = accountResponse != null ? accountResponse.getPuuid() : null;
+            log.info("Riot API 호출 성공: puuid={}", puuid != null ? "조회됨" : "null");
+        } catch (Exception e) {
+            log.warn("Riot API 호출 실패: gameNickname={}, gameTag={}, error={}. puuid는 기존 값을 유지합니다.", 
+                    request.getGameNickname(), request.getGameTag(), e.getMessage());
+            // Riot API 호출 실패 시 기존 puuid 유지
+            puuid = gameAccount.getPuuid();
+        }
+
+        // 게임 계정 정보 업데이트
+        gameAccount.update(request.getGameNickname(), request.getGameTag(), puuid);
+        GameAccount updatedGameAccount = gameAccountRepository.save(gameAccount);
+
+        return GameAccountResponse.builder()
+                .gameAccountId(updatedGameAccount.getGameAccountId())
+                .gameNickname(updatedGameAccount.getGameNickname())
+                .gameTag(updatedGameAccount.getGameTag())
+                .gameType(updatedGameAccount.getGameType())
+                .puuid(updatedGameAccount.getPuuid())
+                .userId(updatedGameAccount.getUser().getId())
                 .build();
     }
 

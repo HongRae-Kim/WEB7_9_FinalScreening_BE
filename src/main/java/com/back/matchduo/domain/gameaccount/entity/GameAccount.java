@@ -43,4 +43,18 @@ public class GameAccount extends BaseEntity {
         this.puuid = puuid;
         this.user = user;
     }
+
+    /**
+     * 게임 계정 정보 업데이트
+     * @param gameNickname 새로운 닉네임
+     * @param gameTag 새로운 태그
+     * @param puuid 새로운 puuid
+     */
+    public void update(String gameNickname, String gameTag, String puuid) {
+        this.gameNickname = gameNickname;
+        this.gameTag = gameTag;
+        if (puuid != null) {
+            this.puuid = puuid;
+        }
+    }
 }
