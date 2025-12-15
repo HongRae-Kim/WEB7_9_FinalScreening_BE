@@ -79,6 +79,8 @@ public class GameAccountService {
                 .gameType(savedGameAccount.getGameType())
                 .puuid(savedGameAccount.getPuuid())
                 .userId(savedGameAccount.getUser().getId())
+                .createdAt(savedGameAccount.getCreatedAt())
+                .updatedAt(savedGameAccount.getUpdatedAt())
                 .build();
     }
 
@@ -99,6 +101,8 @@ public class GameAccountService {
                 .gameType(gameAccount.getGameType())
                 .puuid(gameAccount.getPuuid())
                 .userId(gameAccount.getUser().getId())
+                .createdAt(gameAccount.getCreatedAt())
+                .updatedAt(gameAccount.getUpdatedAt())
                 .build();
     }
 
@@ -119,6 +123,8 @@ public class GameAccountService {
                         .gameType(gameAccount.getGameType())
                         .puuid(gameAccount.getPuuid())
                         .userId(gameAccount.getUser().getId())
+                        .createdAt(gameAccount.getCreatedAt())
+                        .updatedAt(gameAccount.getUpdatedAt())
                         .build())
                 .toList();
     }
@@ -160,6 +166,8 @@ public class GameAccountService {
                 .gameType(updatedGameAccount.getGameType())
                 .puuid(updatedGameAccount.getPuuid())
                 .userId(updatedGameAccount.getUser().getId())
+                .createdAt(updatedGameAccount.getCreatedAt())
+                .updatedAt(updatedGameAccount.getUpdatedAt())
                 .build();
     }
 

@@ -46,6 +46,7 @@ public class GameAccount extends BaseEntity {
 
     /**
      * 게임 계정 정보 업데이트
+     * createdAt은 변경되지 않음 (최초 등록 시간 유지)
      * @param gameNickname 새로운 닉네임
      * @param gameTag 새로운 태그
      * @param puuid 새로운 puuid
@@ -56,5 +57,7 @@ public class GameAccount extends BaseEntity {
         if (puuid != null) {
             this.puuid = puuid;
         }
+        // createdAt은 @CreatedDate와 updatable = false로 보호됨
+        // updatedAt은 @LastModifiedDate로 자동 업데이트됨
     }
 }

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,5 +18,7 @@ public class GameAccountResponse {
     private String gameType;
     private String puuid;
     private Long userId;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
 
