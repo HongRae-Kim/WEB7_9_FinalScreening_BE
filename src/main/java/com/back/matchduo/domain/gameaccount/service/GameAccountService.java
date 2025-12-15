@@ -7,6 +7,7 @@ import com.back.matchduo.domain.gameaccount.dto.response.GameAccountResponse;
 import com.back.matchduo.domain.gameaccount.dto.RiotApiDto;
 import com.back.matchduo.domain.gameaccount.entity.GameAccount;
 import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
+import com.back.matchduo.domain.gameaccount.repository.RankRepository;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class GameAccountService {
     private final GameAccountRepository gameAccountRepository;
     private final UserRepository userRepository;
     private final RiotApiClient riotApiClient;
+    private final RankRepository rankRepository;
 
     /**
      * 게임 계정 생성 (닉네임과 태그 저장)
@@ -173,12 +175,20 @@ public class GameAccountService {
 
     /**
      * 게임 계정 삭제 (연동 해제)
+     * 게임 계정 삭제 시 관련된 랭크 정보도 함께 삭제됩니다.
      * @param gameAccountId 게임 계정 ID
      */
     public void deleteGameAccount(Long gameAccountId) {
         GameAccount gameAccount = gameAccountRepository.findById(gameAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("게임 계정을 찾을 수 없습니다. gameAccountId: " + gameAccountId));
 
+        // 관련된 랭크 정보 먼저 삭제
+        rankRepository.findByGameAccount_GameAccountId(gameAccountId).forEach(rank -> {
+            rankRepository.delete(rank);
+            log.debug("랭크 정보 삭제: rankId={}, queueType={}", rank.getRankId(), rank.getQueueType());
+        });
+
+        // 게임 계정 삭제
         gameAccountRepository.delete(gameAccount);
         log.info("게임 계정 삭제 완료: gameAccountId={}, gameNickname={}, gameTag={}", 
                 gameAccountId, gameAccount.getGameNickname(), gameAccount.getGameTag());
