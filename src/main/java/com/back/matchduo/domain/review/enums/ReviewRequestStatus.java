@@ -4,5 +4,4 @@ public enum ReviewRequestStatus {
 
     PENDING,    // 대기중(모집완료 상태)
     COMPLETED,   // 완료(게임완료)
-    DONE    // 리뷰 모두 작성
 }

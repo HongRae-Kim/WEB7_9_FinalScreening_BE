@@ -58,8 +58,4 @@ public class ReviewRequest extends SoftDeletableEntity {
     public void complete() {
         this.status = ReviewRequestStatus.COMPLETED;
     }
-
-    public void done() {
-        this.status = ReviewRequestStatus.DONE;
-    }
 }
