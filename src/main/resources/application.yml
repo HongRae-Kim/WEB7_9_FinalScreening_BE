@@ -34,3 +34,8 @@ custom:
   jwt:
     expireSeconds: "#{30 * 60}"
     secretPattern: ${JWT_SECRET}
+
+riot:
+  api:
+    base-url: ${RIOT_API_BASE_URL:https://asia.api.riotgames.com}
+    key: ${RIOT_API_KEY:}
