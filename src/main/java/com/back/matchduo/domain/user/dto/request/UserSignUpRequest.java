@@ -17,6 +17,10 @@ public record UserSignUpRequest(
         )
         String password,
 
+        @NotBlank
+        @Schema(description = "비밀번호 확인", example = "password123")
+        String passwordConfirm,
+
         //비속어는 Service에서 제한 예정
         @NotBlank
         @Schema(description = "닉네임", example = "nick")
