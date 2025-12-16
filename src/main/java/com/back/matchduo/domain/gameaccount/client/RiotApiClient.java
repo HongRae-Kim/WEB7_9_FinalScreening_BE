@@ -98,5 +98,36 @@ public class RiotApiClient {
             throw new RuntimeException("Riot League API 호출에 실패했습니다: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * PUUID로 소환사 정보 조회
+     * @param puuid PUUID
+     * @return 소환사 정보 (profileIconId 포함)
+     */
+    public RiotApiDto.SummonerResponse getSummonerByPuuid(String puuid) {
+        String url = UriComponentsBuilder
+                .fromHttpUrl(riotLeagueApiBaseUrl)
+                .path("/lol/summoner/v4/summoners/by-puuid/{puuid}")
+                .buildAndExpand(puuid)
+                .toUriString();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Riot-Token", riotApiKey);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<RiotApiDto.SummonerResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    RiotApiDto.SummonerResponse.class
+            );
+
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("Riot Summoner API 호출 실패: puuid={}, error={}", puuid, e.getMessage());
+            throw new RuntimeException("Riot Summoner API 호출에 실패했습니다: " + e.getMessage(), e);
+        }
+    }
 }
 
