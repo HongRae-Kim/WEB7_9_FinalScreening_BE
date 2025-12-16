@@ -21,7 +21,7 @@ public class DataDragonService {
     
     private static final String VERSIONS_API_URL = "https://ddragon.leagueoflegends.com/api/versions.json";
     private static final Duration CACHE_DURATION = Duration.ofHours(24);
-    private static final String DEFAULT_VERSION = "14.1.1"; // 기본값 (최신 버전으로 수동 업데이트 필요)
+    private static final String DEFAULT_VERSION = "15.24.1"; // 기본값 (최신 버전으로 수동 업데이트 필요)
     
     private final RestTemplate restTemplate;
     
