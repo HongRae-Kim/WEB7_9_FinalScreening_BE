@@ -75,5 +75,36 @@ public class RiotApiDto {
         @JsonProperty("hotStreak")
         private Boolean hotStreak;
     }
+
+    /**
+     * Riot 소환사 정보 응답
+     * /lol/summoner/v4/summoners/by-puuid/{puuid} 응답
+     */
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SummonerResponse {
+        @JsonProperty("id")
+        private String id;
+
+        @JsonProperty("accountId")
+        private String accountId;
+
+        @JsonProperty("puuid")
+        private String puuid;
+
+        @JsonProperty("name")
+        private String name;
+
+        @JsonProperty("profileIconId")
+        private Integer profileIconId;
+
+        @JsonProperty("revisionDate")
+        private Long revisionDate;
+
+        @JsonProperty("summonerLevel")
+        private Long summonerLevel;
+    }
 }
 
