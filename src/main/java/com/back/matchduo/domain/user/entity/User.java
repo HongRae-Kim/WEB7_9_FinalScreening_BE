@@ -31,9 +31,17 @@ public class User extends BaseEntity {
     @Column(length = 100)
     private String comment;
 
-    @Column(nullable = true)
+    @Column
     private String profile_image;
 
     @Column(length = 100, nullable = false)
     private String verification_code;
+
+    public static User createUser(String email, String password, String nickname) {
+        User user = new User();
+        user.email = email;
+        user.password = password;
+        user.nickname = nickname;
+        return user;
+    }
 }
