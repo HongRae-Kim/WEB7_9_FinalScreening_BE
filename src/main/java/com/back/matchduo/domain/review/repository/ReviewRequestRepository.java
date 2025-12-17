@@ -28,4 +28,6 @@ public interface ReviewRequestRepository extends JpaRepository<ReviewRequest, Lo
             @Param("userId") Long userId,
             @Param("status") ReviewRequestStatus status
     );
+
+    void deleteByPostIdAndStatus(Long postId, ReviewRequestStatus reviewRequestStatus);
 }

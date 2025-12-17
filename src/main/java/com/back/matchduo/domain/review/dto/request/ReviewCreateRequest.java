@@ -12,7 +12,7 @@ public record ReviewCreateRequest(
         Long revieweeId,
 
         @NotNull(message = "평가는 필수입니다.")
-        ReviewEmoji reviewEmoji,
+        ReviewEmoji emoji,
 
         @Size(max = 100, message = "리뷰 내용은 100자 이내여야 합니다.")
         String content
