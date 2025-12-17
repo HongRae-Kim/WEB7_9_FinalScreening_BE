@@ -64,20 +64,20 @@ public class PostValidator {
 
         Set<Position> unique = new HashSet<>(positions);
 
-        // ANY 선택 시 ["ANY"] 단독만 허용
+        // ANY 선택 시 ANY 단독만 허용
         if (unique.contains(Position.ANY)) {
             if (unique.size() != 1) {
                 throw new CustomException(CustomErrorCode.INVALID_LOOKING_POSITIONS);
             }
         }
 
-        // 최대 3개 제한은 DTO @Size로 1차 검증되지만, 중복 제거 후도 방어
+        // 최대 3개 제한은 DTO @Size로 1차 검증되지만, 중복 제거 후에도 체크
         if (unique.size() > 3) {
             throw new CustomException(CustomErrorCode.INVALID_LOOKING_POSITIONS);
         }
     }
 
-    // memo (생성: 필수)
+    // memo: 필수
     private void validateMemoRequired(String memo) {
         if (memo == null) {
             throw new CustomException(CustomErrorCode.INVALID_POST_MEMO);
@@ -88,7 +88,7 @@ public class PostValidator {
         }
     }
 
-    // memo (수정: 포함된 경우만 검증)
+    // memo 수정: 포함된 경우만 검증
     private void validateMemoOptional(String memo) {
         String trimmed = memo.trim();
         if (trimmed.isEmpty() || trimmed.length() < 1 || trimmed.length() > 50) {

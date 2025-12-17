@@ -46,23 +46,23 @@ public class PostListFacade {
     private final PostGameAccountQueryRepository postGameAccountQueryRepository;
     private final PostGameProfileIconUrlBuilder iconUrlBuilder;
 
-    // 모집글 생성 + 생성 직후 화면에 필요한 최소 파티 표시(작성자만)
+    // 모집글 생성 + 화면에 필요한 최소 파티 표시(작성자만)
     @Transactional
     public PostCreateResponse createPostWithPartyView(PostCreateRequest request, Long userId) {
-        // 1) 생성 규칙 검증
+        // 생성 규칙 검증
         postValidator.validateCreate(request);
 
         // 2) 게임모드
         GameMode gameMode = gameModeRepository.findById(request.gameModeId())
                 .orElseThrow(() -> new CustomException(CustomErrorCode.GAME_MODE_NOT_FOUND));
 
-        // 3) lookingPositions 직렬화
+        // lookingPositions 직렬화
         String lookingPositionsJson = serializePositions(request.lookingPositions());
 
-        // 4) User 연결
+        // User 연결
         User writerRef = getUserReference(userId);
 
-        // 5) Post 저장
+        // Post 저장
         Post post = Post.builder()
                 .user(writerRef)
                 .gameMode(gameMode)
@@ -76,7 +76,7 @@ public class PostListFacade {
 
         Post saved = postRepository.save(post);
 
-        // 6) 생성 직후 participants는 최소 작성자 1명으로 표시 (파티 생성은 팀원 로직이 후행)
+        // 생성 직후 participants는 최소 작성자 1명으로 표시
         List<Position> lookingPositions = request.lookingPositions();
 
         User writer = userRepository.findById(userId)
@@ -84,7 +84,7 @@ public class PostListFacade {
 
         PostWriter writerDto = buildWriterDto(writer, null, null);
 
-        // role은 응답 명세서 기준 "LEADER"/"MEMBER" 문자열로 내려줌
+        // role은 응답 명세서 기준 "LEADER"/"MEMBER" 문자열로 내림
         List<PostParticipant> participants = List.of(
                 new PostParticipant(
                         writer.getId(),
@@ -100,10 +100,10 @@ public class PostListFacade {
     // 모집글 수정 + 화면용 응답 조립
     @Transactional
     public PostUpdateResponse updatePostWithPartyView(Post post, PostUpdateRequest request) {
-        // 1) 합성 검증 포함
+        // 합성 검증 포함
         postValidator.validateUpdateMerged(post, request);
 
-        // 2) lookingPositions 변경이 들어오면 JSON으로 직렬화
+        // lookingPositions 변경이 들어오면 JSON으로 직렬화
         String lookingPositionsJson = (request.lookingPositions() != null)
                 ? serializePositions(request.lookingPositions())
                 : null;
@@ -117,8 +117,7 @@ public class PostListFacade {
                 request.memo()
         );
 
-        // 3) 응답 조립(파티/계정은 목록 로직과 동일하게 IN 조회까지는 과함 → 단건 조회로 조립)
-        // 단건은 N+1 이슈가 아니므로 단순 조회로 구성
+        // 응답 조립 → 단건 조회로 조립 : N+1 이슈가 아니므로 단순 조회로 구성
         User writer = post.getUser(); // 트랜잭션 내
         PostWriter writerDto = buildWriterDto(writer, null, null);
 
@@ -127,7 +126,7 @@ public class PostListFacade {
         // 파티가 이미 생성돼 있으면 붙이고, 없으면 작성자만
         Integer currentParticipants = 1;
 
-        // role은 응답 명세서 기준 "LEADER"/"MEMBER" 문자열로 내려줌
+        // role은 응답 명세서 기준 "LEADER"/"MEMBER" 문자열로 내림
         List<PostParticipant> participants = List.of(
                 new PostParticipant(
                         writer.getId(),
@@ -140,7 +139,7 @@ public class PostListFacade {
         return PostUpdateResponse.of(post, lookingPositions, currentParticipants, writerDto, participants);
     }
 
-    // 목록 조회: 필터 + N+1 방지 + 응답 조립
+    // 목록 조회: 필터, N+1 방지, 응답 조립
     @Transactional(readOnly = true)
     public PostListResponse getPostList(
             Long cursor,
@@ -157,10 +156,10 @@ public class PostListFacade {
         // myPositions 파싱 (ANY 포함되면 필터 미적용)
         List<Position> myPositions = postListQueryRepository.parseMyPositionsCsv(myPositionsCsv);
 
-        // tier는 대문자 기준 저장일 가능성이 높아 normalize
+        // tier normalize
         String normalizedTier = (tier == null || tier.isBlank()) ? null : tier.trim().toUpperCase();
 
-        // 1) Post 목록 1번 조회 (size + 1)
+        // Post 목록 1번 조회 (size + 1)
         List<Post> posts = postListQueryRepository.findPosts(
                 cursor,
                 pageSize + 1,
@@ -184,13 +183,13 @@ public class PostListFacade {
             return new PostListResponse(List.of(), nextCursor, hasNext);
         }
 
-        // 2) writer userIds 수집
+        // writer userIds 수집
         List<Long> writerIds = posts.stream()
                 .map(p -> p.getUser().getId())
                 .distinct()
                 .toList();
 
-        // 3) GameAccount 일괄 조회 (LOL 계정만)
+        // GameAccount 일괄 조회 (LOL 계정만)
         List<GameAccount> accounts = postGameAccountQueryRepository.findLolAccountsByUserIds(writerIds);
         Map<Long, GameAccount> accountByUserId = accounts.stream()
                 .collect(Collectors.toMap(ga -> ga.getUser().getId(), Function.identity(), (a, b) -> a));
@@ -211,13 +210,13 @@ public class PostListFacade {
                     .put(r.getQueueType(), r);
         }
 
-        // 5) Party 일괄 조회 (postIds IN)
+        // Party 일괄 조회 (postIds IN)
         List<Long> postIds = posts.stream().map(Post::getId).toList();
         List<Party> parties = postPartyQueryRepository.findPartiesByPostIds(postIds);
         Map<Long, Party> partyByPostId = parties.stream()
                 .collect(Collectors.toMap(Party::getPostId, Function.identity(), (a, b) -> a));
 
-        // 6) PartyMember 일괄 조회 (partyIds IN + JOINED + join fetch user)
+        // PartyMember 일괄 조회 (partyIds IN + JOINED + join fetch user)
         List<Long> partyIds = parties.stream().map(Party::getId).toList();
         List<PartyMember> joinedMembers = postPartyQueryRepository.findJoinedMembersByPartyIds(partyIds);
 
@@ -225,7 +224,7 @@ public class PostListFacade {
         Map<Long, List<PartyMember>> membersByPartyId = joinedMembers.stream()
                 .collect(Collectors.groupingBy(pm -> pm.getParty().getId()));
 
-        // 7) PostDto 조립
+        // PostDto 조립
         List<PostListResponse.PostDto> dtoList = new ArrayList<>();
 
         for (Post p : posts) {
@@ -245,7 +244,7 @@ public class PostListFacade {
                         profileIconUrl
                 );
 
-                // 정책: gameMode/queueType 상관없이 "솔로랭크(RANKED_SOLO_5x5)" 기준 티어만 사용
+                // 정책: gameMode/queueType 상관없이 솔로랭크 기준 티어만 사용
                 Rank matched = findSoloRank(ga.getGameAccountId(), rankMap);
 
                 if (matched != null) {
@@ -325,7 +324,7 @@ public class PostListFacade {
         Map<String, Rank> m = rankMap.get(gameAccountId);
         if (m == null) return null;
 
-        // 정책: 무조건 솔로랭크만 사용
+        // 정책: 솔로랭크만 사용
         return m.get("RANKED_SOLO_5x5");
     }
 

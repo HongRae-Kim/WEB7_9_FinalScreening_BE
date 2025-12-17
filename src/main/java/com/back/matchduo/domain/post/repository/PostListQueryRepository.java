@@ -55,13 +55,12 @@ public class PostListQueryRepository {
             jpql.append("AND gm.id = :gameModeId ");
         }
 
-        // myPositions 필터: ANY 포함되면 적용 안 함(=myPositions가 null이거나 비어있음)
+        // myPositions 필터: ANY 포함되면 적용 안 함
         if (myPositions != null && !myPositions.isEmpty()) {
             jpql.append("AND p.myPosition IN :myPositions ");
         }
 
-        // tier 필터 정책:
-        // - 게임모드/큐타입 상관없이 "솔로랭크(RANKED_SOLO_5x5)" 기준으로만 tier 체크
+        // tier 필터 : 게임모드/큐타입 상관없이 "솔로랭크(RANKED_SOLO_5x5)" 기준으로만 tier 체크
         if (tier != null && !tier.isBlank()) {
             jpql.append("AND ga.gameType = :lolType ");
             jpql.append("AND r.queueType = :soloQueueType ");
@@ -110,7 +109,7 @@ public class PostListQueryRepository {
             }
 
             // 잘못된 값이 오면 무시하지 말고 예외로 막고 싶으면 여기서 CustomException 던져도 됨
-            // 지금은 "값이 틀리면 400"이 더 명확하긴 함(정책에 따라)
+            // 현재는 값이 틀리면 400
             list.add(Position.valueOf(v.toUpperCase()));
         }
 

@@ -28,7 +28,7 @@ public class PostPartyQueryRepository {
     public List<PartyMember> findJoinedMembersByPartyIds(List<Long> partyIds) {
         if (partyIds == null || partyIds.isEmpty()) return List.of();
 
-        // PartyMemberRepository의 findActiveMembersByPartyId 를 "IN 버전"으로 Post에서만 구현
+        // PartyMemberRepository의 findActiveMembersByPartyId 를 "IN 버전"으로 Post에서 구현
         return em.createQuery(
                         "SELECT pm FROM PartyMember pm " +
                                 "JOIN FETCH pm.user u " +
