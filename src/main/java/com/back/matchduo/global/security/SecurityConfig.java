@@ -51,6 +51,12 @@ public class SecurityConfig {
 
                 // 인가 규칙
                 .authorizeHttpRequests(auth -> auth
+                        //Swagger 허용
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+
                         // Auth API는 모두 허용
                         .requestMatchers(
                                 "/api/v1/auth/login",
