@@ -43,8 +43,16 @@ public enum CustomErrorCode {
     CANNOT_KICK_LEADER(HttpStatus.BAD_REQUEST, "파티장은 스스로 강퇴할 수 없습니다."),
 
 
-    // 4. Post (모집글) - 추후 구현 시 사용
+    // 4. Post (모집글)
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 모집글을 찾을 수 없습니다."),
+    GAME_MODE_NOT_FOUND(HttpStatus.NOT_FOUND, "게임 모드를 찾을 수 없습니다."),
+    POSITION_SERIALIZE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "포지션 직렬화에 실패했습니다."),
+    INVALID_RECRUIT_COUNT(HttpStatus.BAD_REQUEST, "잘못된 모집 인원입니다."),
+    POST_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 모집글에 대한 권한이 없습니다."),
+    INVALID_POST_MEMO(HttpStatus.BAD_REQUEST, "모집 내용은 1~50자이며 공백만 입력할 수 없습니다."),
+    INVALID_LOOKING_POSITIONS(HttpStatus.BAD_REQUEST, "찾는 포지션 선택이 올바르지 않습니다."),
+    INVALID_POST_STATUS_UPDATE(HttpStatus.BAD_REQUEST, "상태 변경은 FINISHED만 요청할 수 있습니다."),
+
 
     // 5. Chat (채팅)
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),
