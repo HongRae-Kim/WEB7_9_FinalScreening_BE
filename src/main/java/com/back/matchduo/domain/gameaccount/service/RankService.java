@@ -125,20 +125,16 @@ public class RankService {
 
     /**
      * 게임 계정의 모든 랭크 정보 조회
+     * 누구나 다른 사람의 게임 계정 랭크 정보도 조회할 수 있습니다.
      * @param gameAccountId 게임 계정 ID
-     * @param userId 인증된 사용자 ID
+     * @param userId 인증된 사용자 ID (로그용)
      * @return 랭크 정보 목록
      */
     @Transactional(readOnly = true)
     public List<RankResponse> getRanksByGameAccountId(Long gameAccountId, Long userId) {
-        // 게임 계정 조회 및 소유자 검증
+        // 게임 계정 조회
         GameAccount gameAccount = gameAccountRepository.findById(gameAccountId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.GAME_ACCOUNT_NOT_FOUND));
-
-        // 소유자 검증
-        if (!gameAccount.getUser().getId().equals(userId)) {
-            throw new CustomException(CustomErrorCode.FORBIDDEN_GAME_ACCOUNT);
-        }
 
         List<Rank> ranks = rankRepository.findByGameAccount_GameAccountId(gameAccountId);
         return ranks.stream()

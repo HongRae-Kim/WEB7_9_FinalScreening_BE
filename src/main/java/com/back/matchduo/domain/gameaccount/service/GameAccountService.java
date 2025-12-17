@@ -102,19 +102,15 @@ public class GameAccountService {
 
     /**
      * 게임 계정 조회
+     * 누구나 다른 사람의 게임 계정도 조회할 수 있습니다.
      * @param gameAccountId 게임 계정 ID
-     * @param userId 인증된 사용자 ID
+     * @param userId 인증된 사용자 ID (로그용)
      * @return 게임 계정 정보
      */
     @Transactional(readOnly = true)
     public GameAccountResponse getGameAccount(Long gameAccountId, Long userId) {
         GameAccount gameAccount = gameAccountRepository.findById(gameAccountId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.GAME_ACCOUNT_NOT_FOUND));
-
-        // 소유자 검증
-        if (!gameAccount.getUser().getId().equals(userId)) {
-            throw new CustomException(CustomErrorCode.FORBIDDEN_GAME_ACCOUNT);
-        }
 
         // DB에서 프로필 아이콘 ID 가져오기
         String profileIconUrl = getProfileIconUrl(gameAccount.getProfileIconId());
