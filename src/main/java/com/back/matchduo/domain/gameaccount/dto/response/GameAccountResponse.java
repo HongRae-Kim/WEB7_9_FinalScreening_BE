@@ -17,6 +17,8 @@ public class GameAccountResponse {
     private String gameTag;
     private String gameType;
     private String puuid;
+    private Integer profileIconId; // 소환사 아이콘 ID
+    private String profileIconUrl; // 소환사 아이콘 이미지 URL
     private Long userId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

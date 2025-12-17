@@ -24,6 +24,7 @@ public class RankService {
     private final RankRepository rankRepository;
     private final GameAccountRepository gameAccountRepository;
     private final RiotApiClient riotApiClient;
+    private final GameAccountService gameAccountService;
 
     /**
      * 승률 계산 (소수점 첫째 자리까지 반올림)
@@ -44,12 +45,18 @@ public class RankService {
     /**
      * 게임 계정의 랭크 정보 갱신 (전적 갱신)
      * @param gameAccountId 게임 계정 ID
+     * @param userId 인증된 사용자 ID
      * @return 갱신된 랭크 정보 목록
      */
-    public List<RankResponse> refreshRankData(Long gameAccountId) {
+    public List<RankResponse> refreshRankData(Long gameAccountId, Long userId) {
         // 게임 계정 조회
         GameAccount gameAccount = gameAccountRepository.findById(gameAccountId)
                 .orElseThrow(() -> new IllegalArgumentException("게임 계정을 찾을 수 없습니다. gameAccountId: " + gameAccountId));
+
+        // 소유자 검증
+        if (!gameAccount.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 게임 계정만 랭크 정보를 갱신할 수 있습니다. gameAccountId: " + gameAccountId);
+        }
 
         // puuid가 없으면 랭크 정보를 가져올 수 없음
         if (gameAccount.getPuuid() == null || gameAccount.getPuuid().isEmpty()) {
@@ -110,6 +117,9 @@ public class RankService {
                 })
                 .collect(Collectors.toList());
 
+        // 프로필 아이콘도 함께 갱신
+        gameAccountService.refreshProfileIconId(gameAccount);
+
         log.info("랭크 정보 갱신 완료: gameAccountId={}, 갱신된 랭크 개수={}", gameAccountId, savedRanks.size());
         return savedRanks;
     }
@@ -117,10 +127,20 @@ public class RankService {
     /**
      * 게임 계정의 모든 랭크 정보 조회
      * @param gameAccountId 게임 계정 ID
+     * @param userId 인증된 사용자 ID
      * @return 랭크 정보 목록
      */
     @Transactional(readOnly = true)
-    public List<RankResponse> getRanksByGameAccountId(Long gameAccountId) {
+    public List<RankResponse> getRanksByGameAccountId(Long gameAccountId, Long userId) {
+        // 게임 계정 조회 및 소유자 검증
+        GameAccount gameAccount = gameAccountRepository.findById(gameAccountId)
+                .orElseThrow(() -> new IllegalArgumentException("게임 계정을 찾을 수 없습니다. gameAccountId: " + gameAccountId));
+
+        // 소유자 검증
+        if (!gameAccount.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 게임 계정만 랭크 정보를 조회할 수 있습니다. gameAccountId: " + gameAccountId);
+        }
+
         List<Rank> ranks = rankRepository.findByGameAccount_GameAccountId(gameAccountId);
         return ranks.stream()
                 .map(this::convertToResponse)
