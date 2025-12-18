@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "user")
+@Table(name = "users")
 public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,7 +34,7 @@ public class User extends BaseEntity {
     @Column(name = "profile_image")
     private String profileImage;
 
-    @Column(name = "verification_code", length = 100, nullable = false)
+    @Column(name = "verification_code", length = 100)
     private String verificationCode;
 
     public static User createUser(String email, String password, String nickname) {
