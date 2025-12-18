@@ -3,6 +3,8 @@ package com.back.matchduo.domain.user.service;
 import com.back.matchduo.domain.user.dto.request.UserProfileRequest;
 import com.back.matchduo.domain.user.dto.request.UserUpdateRequest;
 import com.back.matchduo.domain.user.entity.User;
+import com.back.matchduo.global.exeption.CustomErrorCode;
+import com.back.matchduo.global.exeption.CustomException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -70,17 +72,17 @@ public class UserProfileService {
         if (isBlank(request.password())
                 || isBlank(request.newPassword())
                 || isBlank(request.newPasswordConfirm())) {
-            throw new IllegalArgumentException("비밀번호 변경을 위해 모든 비밀번호 항목을 입력해야 합니다.");
+            throw new CustomException(CustomErrorCode.PASSWORD_SHORTAGE);
         }
 
         //새 비밀번호 불일치
         if (!request.newPassword().equals(request.newPasswordConfirm())) {
-            throw new IllegalArgumentException("새 비밀번호가 일치하지 않습니다.");
+            throw new CustomException(CustomErrorCode.PASSWORD_INCONSISTENCY);
         }
 
         //현재 비밀번호 검증 (평문 비교)
         if (!request.password().equals(user.getPassword())) {
-            throw new IllegalArgumentException("현재 비밀번호가 올바르지 않습니다.");
+            throw new CustomException(CustomErrorCode.WRONG_CURRENT_PASSWORD);
         }
 
         //비밀번호 변경
