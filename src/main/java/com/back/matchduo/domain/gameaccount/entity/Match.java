@@ -8,7 +8,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "match_history")
+@Table(name = "match_history",
+       uniqueConstraints = {
+           @UniqueConstraint(columnNames = {"riot_match_id", "game_account_id"})
+       })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Match extends BaseEntity {
@@ -18,7 +21,7 @@ public class Match extends BaseEntity {
     @Column(name = "match_id")
     private Long matchId;
 
-    @Column(name = "riot_match_id", nullable = false, unique = true)
+    @Column(name = "riot_match_id", nullable = false)
     private String riotMatchId;  // Riot API의 matchId (예: "KR_7929968207")
 
     @ManyToOne(fetch = FetchType.LAZY)

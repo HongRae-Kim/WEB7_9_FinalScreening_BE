@@ -353,6 +353,7 @@ public class MatchService {
     /**
      * 룬 이미지 URL 배열 생성
      * 주 룬과 부 룬의 메인 룬만 반환 (op.gg 스타일)
+     * 예: 정복자(주 룬) + 지배(부 룬) → 2개의 이미지만 반환
      */
     private List<String> getPerkImageUrls(String perksJson) {
         if (perksJson == null || perksJson.isEmpty()) {
@@ -364,41 +365,44 @@ public class MatchService {
             
             List<String> imageUrls = new ArrayList<>();
             
-            // 주 룬 (primary style) - 메인 룬만
+            // 주 룬 스타일의 메인 룬 이미지 (예: 정복자)
             if (perks.getStyles() != null && !perks.getStyles().isEmpty()) {
                 RiotApiDto.MatchResponse.Participant.Perks.PerkStyle primaryStyle = perks.getStyles().get(0);
-                if (primaryStyle != null && primaryStyle.getStyle() != null) {
-                    // 주 룬 메인 룬 (첫 번째 선택)
-                    if (primaryStyle.getSelections() != null && !primaryStyle.getSelections().isEmpty()) {
-                        Integer perk = primaryStyle.getSelections().get(0).getPerk();
-                        if (perk != null) {
-                            imageUrls.add(String.format(
-                                    "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/%d/%d.png",
-                                    primaryStyle.getStyle(), perk
-                            ));
-                        }
-                    }
-                }
-                
-                // 부 룬 (sub style) - 메인 룬만
-                if (perks.getStyles().size() > 1) {
-                    RiotApiDto.MatchResponse.Participant.Perks.PerkStyle subStyle = perks.getStyles().get(1);
-                    if (subStyle != null && subStyle.getStyle() != null) {
-                        // 부 룬 메인 룬 (첫 번째 선택)
-                        if (subStyle.getSelections() != null && !subStyle.getSelections().isEmpty()) {
-                            Integer perk = subStyle.getSelections().get(0).getPerk();
-                            if (perk != null) {
-                                imageUrls.add(String.format(
-                                        "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/%d/%d.png",
-                                        subStyle.getStyle(), perk
-                                ));
-                            }
-                        }
+                if (primaryStyle != null 
+                        && primaryStyle.getStyle() != null 
+                        && primaryStyle.getSelections() != null 
+                        && !primaryStyle.getSelections().isEmpty()) {
+                    Integer primaryPerk = primaryStyle.getSelections().get(0).getPerk();
+                    if (primaryPerk != null) {
+                        // 주 룬 메인 룬 이미지 URL 생성 (예: 정복자)
+                        imageUrls.add(String.format(
+                                "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/%d/%d.png",
+                                primaryStyle.getStyle(), primaryPerk
+                        ));
                     }
                 }
             }
             
-            return imageUrls;
+            // 부 룬 스타일의 메인 룬 이미지 (예: 지배)
+            if (perks.getStyles() != null && perks.getStyles().size() > 1) {
+                RiotApiDto.MatchResponse.Participant.Perks.PerkStyle subStyle = perks.getStyles().get(1);
+                if (subStyle != null 
+                        && subStyle.getStyle() != null 
+                        && subStyle.getSelections() != null 
+                        && !subStyle.getSelections().isEmpty()) {
+                    Integer subPerk = subStyle.getSelections().get(0).getPerk();
+                    if (subPerk != null) {
+                        // 부 룬 메인 룬 이미지 URL 생성 (예: 지배 스타일의 메인 룬)
+                        imageUrls.add(String.format(
+                                "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/%d/%d.png",
+                                subStyle.getStyle(), subPerk
+                        ));
+                    }
+                }
+            }
+            
+            // 최대 2개의 이미지만 반환 (주 룬 1개 + 부 룬 1개)
+            return imageUrls.size() > 2 ? imageUrls.subList(0, 2) : imageUrls;
         } catch (JsonProcessingException e) {
             log.warn("룬 정보 JSON 파싱 실패: {}", e.getMessage());
             return List.of();
