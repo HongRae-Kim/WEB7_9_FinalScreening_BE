@@ -196,6 +196,7 @@ public class GameAccountService {
         }
 
         // Riot API 호출하여 새로운 puuid 가져오기
+        String oldPuuid = gameAccount.getPuuid();  // 이전 puuid 저장
         String puuid = null;
         try {
             RiotApiDto.AccountResponse accountResponse = riotApiClient.getAccountByRiotId(
@@ -209,6 +210,14 @@ public class GameAccountService {
                     request.getGameNickname(), request.getGameTag(), e.getMessage());
             // Riot API 호출 실패 시 기존 puuid 유지
             puuid = gameAccount.getPuuid();
+        }
+
+        // puuid가 변경된 경우 이전 계정의 매치 정보 삭제 (한 개의 puuid 정보만 유지)
+        if (oldPuuid != null && puuid != null && !oldPuuid.equals(puuid)) {
+            log.info("게임 계정 puuid 변경 감지: gameAccountId={}, oldPuuid={}, newPuuid={}", 
+                    gameAccountId, oldPuuid, puuid);
+            matchService.deleteMatchesByGameAccountId(gameAccountId);
+            log.info("이전 계정의 매치 정보 삭제 완료: gameAccountId={}", gameAccountId);
         }
 
         // 프로필 아이콘 갱신 (롤만, 계정 수정 시)

@@ -83,13 +83,16 @@ public class MatchParticipant extends BaseEntity {
     @Column(name = "perks", columnDefinition = "TEXT")
     private String perks;  // JSON 형태로 저장
 
+    @Column(name = "puuid")
+    private String puuid;  // 매치 참가 시 사용된 puuid (계정 수정 시 필터링용)
+
     @Builder
     public MatchParticipant(Match match, GameAccount gameAccount, Integer championId, 
                            String championName, Integer spell1Id, Integer spell2Id,
                            Integer kills, Integer deaths, Integer assists, Double kda,
                            Integer cs, Integer level, Integer item0, Integer item1,
                            Integer item2, Integer item3, Integer item4, Integer item5,
-                           Integer item6, String perks) {
+                           Integer item6, String perks, String puuid) {
         this.match = match;
         this.gameAccount = gameAccount;
         this.championId = championId;
@@ -110,6 +113,7 @@ public class MatchParticipant extends BaseEntity {
         this.item5 = item5;
         this.item6 = item6;
         this.perks = perks;
+        this.puuid = puuid;
     }
 }
 

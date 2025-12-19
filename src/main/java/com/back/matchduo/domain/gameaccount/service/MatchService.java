@@ -62,7 +62,7 @@ public class MatchService {
             throw new CustomException(CustomErrorCode.GAME_ACCOUNT_NO_PUUID);
         }
 
-        // Riot API 호출하여 매치 ID 목록 조회
+        // Riot API 호출하여 매치 ID 목록 조회 (현재 puuid로만 조회)
         List<String> matchIds;
         try {
             matchIds = riotApiClient.getMatchIdsByPuuid(gameAccount.getPuuid(), 0, count);
@@ -98,7 +98,7 @@ public class MatchService {
                     continue;  // 스킵
                 }
 
-                // 해당 puuid의 participant 찾기
+                // 해당 puuid의 participant 찾기 (현재 puuid로만 검색)
                 RiotApiDto.MatchResponse.Participant participant = matchResponse.getInfo().getParticipants().stream()
                         .filter(p -> p.getPuuid().equals(gameAccount.getPuuid()))
                         .findFirst()
@@ -126,7 +126,7 @@ public class MatchService {
                         .build();
                 Match savedMatch = matchRepository.save(match);
 
-                // MatchParticipant 엔티티 생성 및 저장
+                // MatchParticipant 엔티티 생성 및 저장 (participant의 puuid 저장)
                 MatchParticipant matchParticipant = MatchParticipant.builder()
                         .match(savedMatch)
                         .gameAccount(gameAccount)
@@ -148,6 +148,7 @@ public class MatchService {
                         .item5(participant.getItem5())
                         .item6(participant.getItem6())
                         .perks(perksJson)
+                        .puuid(participant.getPuuid())  // participant의 puuid 저장
                         .build();
                 matchParticipantRepository.save(matchParticipant);
 
@@ -168,6 +169,21 @@ public class MatchService {
     }
 
     /**
+     * 게임 계정의 모든 매치 정보 삭제
+     * @param gameAccountId 게임 계정 ID
+     */
+    @Transactional
+    public void deleteMatchesByGameAccountId(Long gameAccountId) {
+        // MatchParticipant 먼저 삭제 (외래키 제약조건 때문에)
+        matchParticipantRepository.deleteByGameAccount_GameAccountId(gameAccountId);
+        log.info("매치 참가자 정보 삭제 완료: gameAccountId={}", gameAccountId);
+        
+        // Match 삭제
+        matchRepository.deleteByGameAccount_GameAccountId(gameAccountId);
+        log.info("매치 정보 삭제 완료: gameAccountId={}", gameAccountId);
+    }
+
+    /**
      * 최근 매치 조회 (DB에서 조회)
      * @param gameAccountId 게임 계정 ID
      * @param userId 인증된 사용자 ID (로그용)
@@ -183,16 +199,14 @@ public class MatchService {
         // DB에서 최근 매치 조회
         List<Match> matches = matchRepository.findByGameAccount_GameAccountIdOrderByGameStartTimestampDesc(gameAccountId);
         
-        // 요청한 개수만큼만 반환
-        List<Match> limitedMatches = matches.stream()
-                .limit(count)
-                .collect(Collectors.toList());
-
+        // 현재 puuid만 사용 (한 개의 puuid 정보만 저장)
+        String currentPuuid = gameAccount.getPuuid();
+        
         // Data Dragon 버전 가져오기
         String version = dataDragonService.getLatestVersion();
 
-        // MatchResponse로 변환
-        return limitedMatches.stream()
+        // MatchResponse로 변환 (현재 puuid와 일치하는 매치만 필터링)
+        List<MatchResponse> filteredMatches = matches.stream()
                 .map(match -> {
                     MatchParticipant participant = matchParticipantRepository.findByMatch_MatchId(match.getMatchId())
                             .orElse(null);
@@ -201,10 +215,25 @@ public class MatchService {
                         log.warn("매치 참가자 정보가 없습니다: matchId={}", match.getMatchId());
                         return null;
                     }
+                    
+                    // participant의 puuid가 현재 puuid와 일치하는지 확인 (현재 puuid만 확인)
+                    String participantPuuid = participant.getPuuid();
+                    boolean isCurrentAccount = participantPuuid != null && participantPuuid.equals(currentPuuid);
+                    
+                    if (!isCurrentAccount) {
+                        log.debug("다른 계정의 매치 필터링: matchId={}, participantPuuid={}, currentPuuid={}", 
+                                match.getRiotMatchId(), participantPuuid, currentPuuid);
+                        return null;
+                    }
 
                     return convertToMatchResponse(match, participant, version);
                 })
                 .filter(match -> match != null)
+                .collect(Collectors.toList());
+        
+        // 요청한 개수만큼만 반환
+        return filteredMatches.stream()
+                .limit(count)
                 .collect(Collectors.toList());
     }
 

@@ -22,5 +22,10 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
      * 매치 ID와 게임 계정 ID로 매치 조회
      */
     Optional<Match> findByRiotMatchIdAndGameAccount_GameAccountId(String riotMatchId, Long gameAccountId);
+
+    /**
+     * 게임 계정 ID로 모든 매치 삭제
+     */
+    void deleteByGameAccount_GameAccountId(Long gameAccountId);
 }
 
