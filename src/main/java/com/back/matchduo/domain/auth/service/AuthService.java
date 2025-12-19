@@ -63,7 +63,8 @@ public class AuthService {
         addSetCookie(res, cookieProvider.createAccessTokenCookie(accessToken, jwtProperties.accessExpireSeconds()));
         addSetCookie(res, cookieProvider.createRefreshTokenCookie(refreshToken, jwtProperties.refreshExpireSeconds()));
 
-        return new LoginResponse(new AuthUserSummary(user.getId(), user.getEmail(), user.getNickname()));
+        return new LoginResponse(new AuthUserSummary(user.getId(), user.getEmail(), user.getNickname()),
+                accessToken, refreshToken);
     }
 
     public LoginResponse refresh(HttpServletRequest req, HttpServletResponse res) {
@@ -97,7 +98,7 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
 
-        return new LoginResponse(new AuthUserSummary(user.getId(), user.getEmail(), user.getNickname()));
+        return new LoginResponse(new AuthUserSummary(user.getId(), user.getEmail(), user.getNickname()), newAccessToken, refreshToken);
     }
 
     public void logout(HttpServletRequest req, HttpServletResponse res) {

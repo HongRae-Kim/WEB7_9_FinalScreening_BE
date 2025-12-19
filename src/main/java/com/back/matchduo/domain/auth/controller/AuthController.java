@@ -40,7 +40,9 @@ public class AuthController {
                                         "userId": 1,
                                         "email": "test@example.com",
                                         "nickname": "테스트유저"
-                                      }
+                                      },
+                                    "accessToken": "string",
+                                      "refreshToken": "string"
                                     }
                                     """)
                     )
