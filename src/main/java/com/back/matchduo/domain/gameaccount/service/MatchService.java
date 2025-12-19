@@ -417,11 +417,20 @@ public class MatchService {
 
     /**
      * 스타일 ID를 스타일 이름으로 변환
+     * Data Dragon API에서 동적으로 가져온 매핑을 우선 사용하고, 없으면 하드코딩된 매핑 사용
      */
     private String getStyleName(Integer styleId) {
         if (styleId == null) {
             return null;
         }
+        
+        // Data Dragon API에서 동적으로 가져온 매핑 우선 사용
+        String styleName = dataDragonService.getStyleName(styleId);
+        if (styleName != null) {
+            return styleName;
+        }
+        
+        // Fallback: 하드코딩된 매핑
         return switch (styleId) {
             case 8000 -> "Precision";
             case 8100 -> "Domination";
@@ -434,12 +443,20 @@ public class MatchService {
 
     /**
      * 룬 ID를 룬 이름으로 변환
+     * Data Dragon API에서 동적으로 가져온 매핑을 우선 사용하고, 없으면 하드코딩된 매핑 사용
      */
     private String getPerkName(Integer styleId, Integer perkId) {
         if (styleId == null || perkId == null) {
             return null;
         }
         
+        // Data Dragon API에서 동적으로 가져온 매핑 우선 사용
+        String perkName = dataDragonService.getPerkName(styleId, perkId);
+        if (perkName != null) {
+            return perkName;
+        }
+        
+        // Fallback: 하드코딩된 매핑 (기존 룬들)
         // Precision (8000)
         if (styleId == 8000) {
             return switch (perkId) {
