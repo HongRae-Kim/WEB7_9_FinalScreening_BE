@@ -391,19 +391,17 @@ public class MatchService {
                 }
             }
             
-            // 부 룬 스타일의 메인 룬 이미지 (예: 지배) - 기존 방식 유지
+            // 부 룬 스타일 이미지 (예: Precision 스타일 이미지)
             if (perks.getStyles() != null && perks.getStyles().size() > 1) {
                 RiotApiDto.MatchResponse.Participant.Perks.PerkStyle subStyle = perks.getStyles().get(1);
-                if (subStyle != null 
-                        && subStyle.getStyle() != null 
-                        && subStyle.getSelections() != null 
-                        && !subStyle.getSelections().isEmpty()) {
-                    Integer subPerk = subStyle.getSelections().get(0).getPerk();
-                    if (subPerk != null) {
-                        // 부 룬 메인 룬 이미지 URL 생성 (기존 ID 기반 방식)
+                if (subStyle != null && subStyle.getStyle() != null) {
+                    // 부 룬 스타일 이미지 URL 생성 (예: 7201_Precision.png)
+                    String subStyleName = getSubStyleName(subStyle.getStyle());
+                    Integer subStyleImageId = getSubStyleImageId(subStyle.getStyle());
+                    if (subStyleName != null && subStyleImageId != null) {
                         imageUrls.add(String.format(
-                                "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/%d/%d.png",
-                                subStyle.getStyle(), subPerk
+                                "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/%d_%s.png",
+                                subStyleImageId, subStyleName
                         ));
                     }
                 }
@@ -495,6 +493,47 @@ public class MatchService {
         }
         
         return null;
+    }
+
+    /**
+     * 부룬 스타일 이미지 ID 반환
+     * JSON 데이터 기준:
+     * - Precision (8000) → 7201
+     * - Domination (8100) → 7200
+     * - Sorcery (8200) → 7202
+     * - Inspiration (8300) → 7203
+     * - Resolve (8400) → 7204
+     */
+    private Integer getSubStyleImageId(Integer styleId) {
+        if (styleId == null) {
+            return null;
+        }
+        return switch (styleId) {
+            case 8000 -> 7201;  // Precision
+            case 8100 -> 7200;  // Domination
+            case 8200 -> 7202;  // Sorcery
+            case 8300 -> 7203;  // Inspiration
+            case 8400 -> 7204;  // Resolve
+            default -> null;
+        };
+    }
+
+    /**
+     * 부룬 스타일 파일명 반환
+     * Inspiration의 경우 "Whimsy"를 사용 (7203_Whimsy.png)
+     */
+    private String getSubStyleName(Integer styleId) {
+        if (styleId == null) {
+            return null;
+        }
+        return switch (styleId) {
+            case 8000 -> "Precision";
+            case 8100 -> "Domination";
+            case 8200 -> "Sorcery";
+            case 8300 -> "Whimsy";  // Inspiration은 부룬에서 Whimsy 사용
+            case 8400 -> "Resolve";
+            default -> null;
+        };
     }
 
     /**
