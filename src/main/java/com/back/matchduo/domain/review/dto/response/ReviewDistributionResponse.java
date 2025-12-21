@@ -1,6 +1,8 @@
 package com.back.matchduo.domain.review.dto.response;
 
 public record ReviewDistributionResponse(
+        Long userId,
+        String nickname,
         Long goodCount,
         Long normalCount,
         Long badCount,
@@ -9,14 +11,16 @@ public record ReviewDistributionResponse(
         Double normalRatio,
         Double badRatio
 ) {
-    public static ReviewDistributionResponse of(long good, long normal, long bad) {
+    public static ReviewDistributionResponse of(Long userId, String nickname, long good, long normal, long bad) {
         long total = good + normal + bad;
 
         if (total == 0) {
-            return new ReviewDistributionResponse(0L, 0L, 0L, 0L, 0.0, 0.0, 0.0);
+            return new ReviewDistributionResponse(userId, nickname, 0L, 0L, 0L, 0L, 0.0, 0.0, 0.0);
         }
 
         return new ReviewDistributionResponse(
+                userId,
+                nickname,
                 good,
                 normal,
                 bad,
