@@ -11,6 +11,7 @@ on:
       - "Dockerfile"
     branches:
       - main
+      - chore/#48/deploy-fix-final
 
 # 권한 최소화/명시화
 permissions:
@@ -115,9 +116,14 @@ jobs:
             
             docker pull ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             
-            cat <<EOF > /home/ubuntu/application-secret.yml
+            sudo rm -rf /home/ubuntu/application-secret.yml
+          
+            # 파일 생성 로직 보완 (Quoted Here-Doc)
+            cat <<'EOF' > /home/ubuntu/application-secret.yml
             ${{ secrets.APPLICATION_SECRET }}
             EOF
+            
+            chmod 600 /home/ubuntu/application-secret.yml
             
             docker stop app1 2>/dev/null || true
             docker rm app1 2>/dev/null || true
