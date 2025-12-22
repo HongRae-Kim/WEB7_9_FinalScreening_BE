@@ -33,6 +33,11 @@ public enum CustomErrorCode {
     PASSWORD_SHORTAGE(HttpStatus.BAD_REQUEST, "비밀번호 변경을 위해 모든 비밀번호 항목을 입력해야 합니다."),
     PASSWORD_INCONSISTENCY(HttpStatus.UNAUTHORIZED, "새 비밀번호가 일치하지 않습니다."),
     WRONG_CURRENT_PASSWORD(HttpStatus.UNAUTHORIZED, "현재 비밀번호가 올바르지 않습니다."),
+    BAN_MYSELF(HttpStatus.BAD_REQUEST, "자신을 차단할 수 없습니다."),
+    NOT_BANNED(HttpStatus.BAD_REQUEST, "차단 내역이 없습니다."),
+
+    // 3. Search (검색)
+    INVALID_SEARCH_KEYWORD(HttpStatus.BAD_REQUEST, "검색어는 공백일 수 없습니다."),
 
     // 3. Party (파티)
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파티를 찾을 수 없습니다."),
@@ -81,7 +86,11 @@ public enum CustomErrorCode {
     DUPLICATE_GAME_ACCOUNT(HttpStatus.CONFLICT, "이미 해당 게임 계정이 등록되어 있습니다."),
     FORBIDDEN_GAME_ACCOUNT(HttpStatus.FORBIDDEN, "본인의 게임 계정만 접근할 수 있습니다."),
     GAME_ACCOUNT_NO_PUUID(HttpStatus.BAD_REQUEST, "게임 계정에 puuid가 없습니다. 먼저 게임 계정을 등록해주세요."),
-    RANK_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "랭크 정보를 가져오는데 실패했습니다.");
+    RANK_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "랭크 정보를 가져오는데 실패했습니다."),
+
+    // 7. Match (매치)
+    MATCH_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "매치 정보를 가져오는데 실패했습니다."),
+    MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "매치 정보를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;
