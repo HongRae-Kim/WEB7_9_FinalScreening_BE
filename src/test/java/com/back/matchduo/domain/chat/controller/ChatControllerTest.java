@@ -158,7 +158,7 @@ class ChatControllerTest {
 
         // when & then
         mockMvc.perform(
-                        post("/api/v1/chats/{chatId}/messages", 1L)
+                        post("/api/v1/chats/{chatRoomId}/messages", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request))
                                 .with(csrf())
@@ -184,7 +184,7 @@ class ChatControllerTest {
 
         // when & then
         mockMvc.perform(
-                        get("/api/v1/chats/{chatId}/messages", 1L)
+                        get("/api/v1/chats/{chatRoomId}/messages", 1L)
                                 .param("size", "30")
                                 .with(user(userDetails))
                 )
@@ -202,7 +202,7 @@ class ChatControllerTest {
 
         // when & then
         mockMvc.perform(
-                        get("/api/v1/chats/{chatId}", 1L)
+                        get("/api/v1/chats/{chatRoomId}", 1L)
                                 .with(user(userDetails))
                 )
                 .andExpect(status().isOk())
@@ -220,7 +220,7 @@ class ChatControllerTest {
 
         // when & then
         mockMvc.perform(
-                        delete("/api/v1/chats/{chatId}", 1L)
+                        delete("/api/v1/chats/{chatRoomId}", 1L)
                                 .with(csrf())
                                 .with(user(userDetails))
                 )
@@ -246,7 +246,7 @@ class ChatControllerTest {
 
         // when & then
         mockMvc.perform(
-                        post("/api/v1/chats/{chatId}/messages/read", 1L)
+                        post("/api/v1/chats/{chatRoomId}/messages/read", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request))
                                 .with(csrf())
