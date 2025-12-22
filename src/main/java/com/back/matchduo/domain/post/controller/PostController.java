@@ -5,7 +5,6 @@ import com.back.matchduo.domain.post.dto.request.PostStatusUpdateRequest;
 import com.back.matchduo.domain.post.dto.request.PostUpdateRequest;
 import com.back.matchduo.domain.post.dto.response.PostCreateResponse;
 import com.back.matchduo.domain.post.dto.response.PostDeleteResponse;
-import com.back.matchduo.domain.post.dto.response.PostDetailResponse;
 import com.back.matchduo.domain.post.dto.response.PostListResponse;
 import com.back.matchduo.domain.post.dto.response.PostStatusUpdateResponse;
 import com.back.matchduo.domain.post.dto.response.PostUpdateResponse;
@@ -84,8 +83,8 @@ public class PostController {
 
     // 모집글 단건 조회 (작성자 검증)
     @GetMapping("/{postId}")
-    @Operation(summary = "모집글 단건 조회", description = "특정 모집글의 상세 정보를 조회합니다.")
-    public PostDetailResponse getPostDetail(
+    @Operation(summary = "모집글 단건 조회 (수정용)", description = "작성자 검증 후 수정 화면에 필요한 모집글 전체 정보를 조회합니다.")
+    public PostUpdateResponse getPostDetail(
             @PathVariable Long postId
     ) {
         Long userId = AuthPrincipal.getUserId();
