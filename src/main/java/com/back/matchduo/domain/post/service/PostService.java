@@ -5,7 +5,6 @@ import com.back.matchduo.domain.post.dto.request.PostStatusUpdateRequest;
 import com.back.matchduo.domain.post.dto.request.PostUpdateRequest;
 import com.back.matchduo.domain.post.dto.response.PostCreateResponse;
 import com.back.matchduo.domain.post.dto.response.PostDeleteResponse;
-import com.back.matchduo.domain.post.dto.response.PostDetailResponse;
 import com.back.matchduo.domain.post.dto.response.PostListResponse;
 import com.back.matchduo.domain.post.dto.response.PostStatusUpdateResponse;
 import com.back.matchduo.domain.post.dto.response.PostUpdateResponse;
@@ -72,13 +71,13 @@ public class PostService {
     }
 
     // 모집글 단건 조회 (작성자 검증)
-    public PostDetailResponse getPostDetail(Long postId, Long userId) {
+    public PostUpdateResponse getPostDetail(Long postId, Long userId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
 
         postValidator.validatePostOwner(post, userId);
 
-        return PostDetailResponse.of(post);
+        return postListFacade.buildPostDetailForEdit(post);
     }
 
     // 삭제
