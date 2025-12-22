@@ -12,13 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -27,9 +20,8 @@ public class UserProfileService {
     private final FileService fileService;
 
     //프로필 조회
-    public UserProfileResponse getProfile(User user) {
-        return new UserProfileResponse(
-                user.getId(),
+    public UserProfileRequest getProfile(User user) {
+        return new UserProfileRequest(
                 user.getEmail(),
                 user.getProfileImage(),
                 user.getNickname(),
@@ -37,75 +29,36 @@ public class UserProfileService {
         );
     }
 
-    //프로필 수정
-    public void updateProfile(User user, UserUpdateRequest request) {
+    // 닉네임 수정
+    public void updateNickname(User user, String nickname) {
+        if (nickname == null || nickname.isBlank()) throw new CustomException(CustomErrorCode.INVALID_REQUEST);
+        User currentUser = findUser(user.getId());
+        currentUser.setNickname(nickname);
+    }
 
-        //기본 정보 수정
-        if (request.email() != null) {
-            user.setEmail(request.email());
-        }
-
-        if (request.nickname() != null) {
-            user.setNickname(request.nickname());
-        }
-
-        if (request.comment() != null) {
-            user.setComment(request.comment());
-        }
-
-        if (request.profile_image() != null) {
-            user.setProfile_image(request.profile_image());
-        }
-
-        //비밀번호 처리
-        handlePassword(user, request);
+    // 자기소개 수정
+    public void updateComment(User user, String comment) {
+        User currentUser = findUser(user.getId());
+        currentUser.setComment(comment); // null일 경우에도 수정 가능하게 유지 (소개 삭제 기능)
     }
 
     //비밀번호 변경 처리
-    private void handlePassword(User user, UserUpdateRequest request) {
-
-        boolean allEmpty =
-                isBlank(request.password())
-                        && isBlank(request.newPassword())
-                        && isBlank(request.newPasswordConfirm());
-
-        //전부 비어 있으면 → 그대로 유지
-        if (allEmpty) {
-            return;
-        }
-
-        //일부만 입력된 경우
-        if (isBlank(request.password())
-                || isBlank(request.newPassword())
-                || isBlank(request.newPasswordConfirm())) {
+    public void updatePassword(User user, UserUpdateRequest request) {
+        User currentUser = findUser(user.getId());
+        //비밀번호 조건 미완료
+        if (isBlank(request.password()) || isBlank(request.newPassword()) || isBlank(request.newPasswordConfirm())) {
             throw new CustomException(CustomErrorCode.PASSWORD_SHORTAGE);
         }
-
-        //새 비밀번호 불일치
+        //비밀번호 불일치
         if (!request.newPassword().equals(request.newPasswordConfirm())) {
             throw new CustomException(CustomErrorCode.PASSWORD_INCONSISTENCY);
         }
-
-        //현재 비밀번호 검증 (평문 비교)
-        if (!request.password().equals(user.getPassword())) {
+        //현재 비밀번호 불일치
+        if (!request.password().equals(currentUser.getPassword())) {
             throw new CustomException(CustomErrorCode.WRONG_CURRENT_PASSWORD);
         }
-
-        //비밀번호 변경
-        user.setPassword(request.newPassword());
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
-
-    // 프로필 이미지 업데이트
-    public void updateProfileWithFile(User user, UserUpdateRequest request, MultipartFile file) {
-        updateProfile(user, request);
-
-        if (file != null && !file.isEmpty()) {
-            updateProfileImage(user, file);
-        }
+        //비밀번호 작성
+        currentUser.setPassword(request.newPassword());
     }
 
     // 이미지 업로드
@@ -115,9 +68,17 @@ public class UserProfileService {
         String savedPath = fileService.upload(file);
 
         // 2. DB 업데이트 (영속성 컨텍스트 활용)
-        User currentUser = userRepository.findById(user.getId())
-                .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
+        User currentUser = findUser(user.getId());
 
         currentUser.updateProfileImage(savedPath);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private User findUser(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
     }
 }

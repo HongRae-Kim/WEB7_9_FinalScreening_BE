@@ -2,7 +2,6 @@ package com.back.matchduo.domain.user.controller;
 
 import com.back.matchduo.domain.user.dto.request.UserProfileRequest;
 import com.back.matchduo.domain.user.dto.request.UserUpdateRequest;
-import com.back.matchduo.domain.user.dto.response.UserProfileResponse;
 import com.back.matchduo.domain.user.service.UserProfileService;
 import com.back.matchduo.global.exeption.CustomErrorCode;
 import com.back.matchduo.global.exeption.CustomException;
@@ -21,30 +20,43 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserProfileController {
     private final UserProfileService userProfileService;
 
-    //프로필 조회
     @GetMapping
-    public ResponseEntity<UserProfileResponse> getProfile(
+    public ResponseEntity<UserProfileRequest> getProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        UserProfileResponse response = userProfileService.getProfile(userDetails.getUser());
+        UserProfileRequest response = userProfileService.getProfile(userDetails.getUser());
         return ResponseEntity.ok(response);
     }
 
-    //프로필 수정
-    @PutMapping
-    public ResponseEntity<Void> updateProfile(
+    //닉네임만 수정
+    @PatchMapping("/nickname")
+    public ResponseEntity<Void> updateNickname(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-
-            @Valid
-            @RequestBody
-            UserUpdateRequest request
-    ) {
-        userProfileService.updateProfile(userDetails.getUser(), request);
+            @Valid @RequestBody UserUpdateRequest request) {
+        userProfileService.updateNickname(userDetails.getUser(), request.nickname());
         return ResponseEntity.ok().build();
     }
 
-    // 프로필 이미지 포함 수정
-    @PutMapping(value = "/all", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    //자기소개만 수정
+    @PatchMapping("/comment")
+    public ResponseEntity<Void> updateComment(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody UserUpdateRequest request) {
+        userProfileService.updateComment(userDetails.getUser(), request.comment());
+        return ResponseEntity.ok().build();
+    }
+
+    //비밀번호만 수정
+    @PatchMapping("/password")
+    public ResponseEntity<Void> updatePassword(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody UserUpdateRequest request) {
+        userProfileService.updatePassword(userDetails.getUser(), request);
+        return ResponseEntity.ok().build();
+    }
+
+    //프로필 이미지만 수정
+    @PutMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateProfileWithFile(
             @AuthenticationPrincipal
             CustomUserDetails userDetails,
