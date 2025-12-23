@@ -320,4 +320,42 @@ public class PartyService {
                 party.getClosedAt()
         );
     }
+
+
+    // 파티원 스스로 탈퇴
+    @Transactional
+    public PartyMemberLeaveResponse leaveParty(Long partyId, Long currentUserId) {
+        // 1. 파티 조회
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
+
+        // 2. 파티장은 탈퇴 불가 (파티 종료를 이용해야 함)
+        if (party.getLeaderId().equals(currentUserId)) {
+            throw new CustomException(CustomErrorCode.LEADER_CANNOT_LEAVE); // 에러 코드 정의 필요
+        }
+
+        // 3. 멤버 조회 (내 정보)
+        PartyMember member = partyMemberRepository.findByPartyIdAndUserId(partyId, currentUserId)
+                .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_MEMBER_NOT_FOUND));
+
+        // 이미 나간 상태인지 확인
+        if (member.getState() != PartyMemberState.JOINED) {
+            throw new CustomException(CustomErrorCode.PARTY_ALREADY_LEFT); // 에러 코드 정의 필요
+        }
+
+        // 4. 탈퇴 처리 (State -> LEFT)
+        member.leaveParty();
+
+        // 5. 파티 상태 및 게시글 상태 동기화 (ACTIVE -> RECRUIT)
+        // 인원이 꽉 차서 ACTIVE 상태였다가, 한 명이 나가서 자리가 비게 된 경우
+        if (party.getStatus() == PartyStatus.ACTIVE) {
+            party.downgradeToRecruit(); // 파티 상태 변경
+
+            // [중요] 게시글(Post) 상태도 모집 중으로 변경하여 목록에 다시 노출
+            postRepository.findById(party.getPostId())
+                    .ifPresent(post -> post.updateStatus(PostStatus.RECRUIT));
+        }
+
+        return PartyMemberLeaveResponse.of(partyId, member.getId());
+    }
 }

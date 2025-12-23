@@ -41,9 +41,6 @@ class ChatServiceTest {
     @Autowired
     private PostRepository postRepository;
 
-    @Autowired
-    private GameModeRepository gameModeRepository;
-
     private User postAuthor;
     private User applicant;
     private Post testPost;
@@ -64,13 +61,10 @@ class ChatServiceTest {
                 .verificationCode("5678")
                 .build());
 
-        GameMode gameMode = gameModeRepository.findById(1L)
-                .orElseGet(() -> gameModeRepository.save(
-                        new GameMode("SOLO_RANK", "솔로 랭크", true)));
 
         testPost = postRepository.save(Post.builder()
                 .user(postAuthor)
-                .gameMode(gameMode)
+                .gameMode(GameMode.SUMMONERS_RIFT) // [변경] Enum 상수명에 맞게 수정 (예: SUMMONERS_RIFT)
                 .queueType(QueueType.DUO)
                 .myPosition(Position.MID)
                 .lookingPositions("[\"TOP\", \"JUNGLE\"]")
