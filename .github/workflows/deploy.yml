@@ -11,6 +11,7 @@ on:
       - "Dockerfile"
     branches:
       - main
+      - chore/#48/deploy-fix-final
 
 # 권한 최소화/명시화
 permissions:
@@ -28,12 +29,12 @@ jobs:
         id: create_tag
         uses: mathieudutour/github-tag-action@v6.2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.MY_GHCR_TOKEN }}
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MY_GHCR_TOKEN }}
         with:
           tag_name: ${{ steps.create_tag.outputs.new_tag }}
           release_name: Release ${{ steps.create_tag.outputs.new_tag }}
@@ -61,8 +62,8 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.MY_GHCR_TOKEN }}
 
       - name: set lower case owner name
         id: export_owner
@@ -115,11 +116,12 @@ jobs:
             IMAGE="ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest"
             NETWORK="common"
             HEALTH_ENDPOINT="/actuator/health"
-            TIMEOUT=60
+            TIMEOUT=120
             
             # 이미지 풀 및 비밀번호 생성 (이전과 동일)
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker pull "$IMAGE"
+            echo "${{ secrets.MY_GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+            docker pull "$IMAGE" || { echo "❌ 이미지 풀 실패"; exit 1; }
+            
             cat <<'EOF' > /home/ubuntu/application-secret.yml
             ${{ secrets.APPLICATION_SECRET }}
             EOF
@@ -127,10 +129,12 @@ jobs:
             # 현재 실행 중인 컨테이너 확인
             if docker ps --format '{{.Names}}' | grep -q "app1_1"; then
               CURRENT="app1_1"
+              CURRENT_PORT=8080
               NEXT="app1_2"
               NEXT_PORT=8081 # 헬스체크용 외부포트
             else
               CURRENT="app1_2"
+              CURRENT_PORT=8081
               NEXT="app1_1"
               NEXT_PORT=8080 # 헬스체크용 외부포트
             fi
@@ -140,12 +144,13 @@ jobs:
             docker rm "$NEXT" 2>/dev/null || true
             
             docker run -d \
+              --restart always \
               --network $NETWORK \
               --name "$NEXT" \
               -p "$NEXT_PORT":8080 \
               -v /home/ubuntu/application-secret.yml:/app/application-secret.yml \
               -e SPRING_PROFILES_ACTIVE=prod \
-              "$IMAGE"
+              "$IMAGE" || { echo "❌ 컨테이너 실행 실패"; exit 1; }
             
             # 헬스 체크 (중요: HAProxy가 감지할 시간을 줘야 함)
             echo ">>> $NEXT 헬스체크 시작..."
@@ -159,6 +164,8 @@ jobs:
               fi
             
               if [ $(( $(date +%s) - START_TIME )) -ge $TIMEOUT ]; then
+                echo "❌ 헬스체크 타임아웃! 컨테이너 로그를 출력합니다:"
+                docker logs "$NEXT"  # 실패 원인을 알기 위해 로그 출력 추가
                 docker stop "$NEXT" && docker rm "$NEXT"
                 exit 1
               fi
@@ -167,9 +174,16 @@ jobs:
             
             # 설정 파일 내의 포트 번호를 동적으로 변경하고 리로드합니다.
             if command -v haproxy &> /dev/null; then
-              sudo sed -i "s/127.0.0.1:$CURRENT_PORT/127.0.0.1:$NEXT_PORT/g" /etc/haproxy/haproxy.cfg
+              if [ "$NEXT_PORT" == "8080" ]; then
+                # app1_1(8080)을 살릴 때: 1_1은 8080으로, 1_2는 대기상태나 기존포트 유지 (여기서는 8080만 활성화)
+                sudo sed -i "s/server app_server_1_1 .*/server app_server_1_1 127.0.0.1:8080 check/g" /etc/haproxy/haproxy.cfg
+              elif [ "$NEXT_PORT" == "8081" ]; then
+              # app1_2(8081)를 살릴 때
+              sudo sed -i "s/server app_server_1_2 .*/server app_server_1_2 127.0.0.1:8081 check/g" /etc/haproxy/haproxy.cfg
+              fi
+              
               sudo systemctl reload haproxy
-              echo "✅ HAProxy 트래픽 전환 완료: $NEXT_PORT"
+              echo "✅ HAProxy 설정 복구 및 트래픽 전환 완료: $NEXT_PORT"
             fi
             
             # HAProxy가 NEXT를 잡은 후 CURRENT를 꺼야 끊김이 없습니다.
