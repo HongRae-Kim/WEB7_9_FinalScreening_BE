@@ -1,18 +1,15 @@
 package com.back.matchduo.domain.user.controller;
 
-import com.back.matchduo.domain.user.dto.request.UserLoginRequest;
 import com.back.matchduo.domain.user.dto.response.UserLoginResponse;
 import com.back.matchduo.domain.user.service.UserLoginService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v1/auth")
 public class UserLoginController {
     private final UserLoginService userLoginService;
 
