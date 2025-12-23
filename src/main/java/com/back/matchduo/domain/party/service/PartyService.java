@@ -7,6 +7,7 @@ import com.back.matchduo.domain.party.entity.*;
 import com.back.matchduo.domain.party.repository.PartyMemberRepository;
 import com.back.matchduo.domain.party.repository.PartyRepository;
 import com.back.matchduo.domain.post.entity.Post;
+import com.back.matchduo.domain.post.entity.PostStatus;
 import com.back.matchduo.domain.post.repository.PostRepository;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
@@ -32,6 +33,7 @@ public class PartyService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final ChatRoomRepository chatRoomRepository;
+
 
     public PartyByPostResponse getPartyByPostId(Long postId, Long currentUserId) {
         // 1. 파티 정보 조회
@@ -296,6 +298,11 @@ public class PartyService {
 
         // 상태 변경 (RECRUIT or ACTIVE -> CLOSED)
         party.closeParty();
+
+        Post post = postRepository.findById(party.getPostId())
+                .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
+
+        post.updateStatus(PostStatus.CLOSED);
 
         return new PartyCloseResponse(
                 party.getId(),

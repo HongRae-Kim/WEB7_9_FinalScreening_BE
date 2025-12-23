@@ -84,7 +84,7 @@ class ChatControllerTest {
         given(testPost.getUser()).willReturn(postAuthor);
         given(testPost.getGameMode()).willReturn(gameMode);
         given(testPost.getQueueType()).willReturn(queueType);
-        given(testPost.getStatus()).willReturn(PostStatus.RECRUITING);
+        given(testPost.getStatus()).willReturn(PostStatus.RECRUIT);
         given(testPost.getMemo()).willReturn("테스트 메모");
 
 

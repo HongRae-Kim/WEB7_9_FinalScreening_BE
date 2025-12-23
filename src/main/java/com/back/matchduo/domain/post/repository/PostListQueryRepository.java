@@ -70,7 +70,7 @@ public class PostListQueryRepository {
         jpql.append("ORDER BY p.id DESC");
 
         TypedQuery<Post> query = em.createQuery(jpql.toString(), Post.class);
-        query.setParameter("finished", PostStatus.FINISHED);
+        query.setParameter("finished", PostStatus.CLOSED);
 
         if (cursor != null) query.setParameter("cursor", cursor);
         if (status != null) query.setParameter("status", status);

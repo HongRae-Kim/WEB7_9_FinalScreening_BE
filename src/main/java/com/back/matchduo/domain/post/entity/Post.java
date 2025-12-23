@@ -29,7 +29,7 @@ public class Post extends SoftDeletableEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PostStatus status = PostStatus.RECRUITING;
+    private PostStatus status = PostStatus.RECRUIT;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "queue_type", nullable = false, length = 20)
@@ -62,7 +62,7 @@ public class Post extends SoftDeletableEntity {
         this.mic = mic;
         this.recruitCount = recruitCount;
         this.memo = memo;
-        this.status = PostStatus.RECRUITING;
+        this.status = PostStatus.RECRUIT;
     }
 
     public void update(Position myPosition, String lookingPositions, QueueType queueType,
