@@ -174,9 +174,16 @@ jobs:
             
             # 설정 파일 내의 포트 번호를 동적으로 변경하고 리로드합니다.
             if command -v haproxy &> /dev/null; then
-              sudo sed -i "s/127.0.0.1:$CURRENT_PORT\b/127.0.0.1:$NEXT_PORT/g" /etc/haproxy/haproxy.cfg
+              if [ "$NEXT_PORT" == "8080" ]; then
+                # app1_1(8080)을 살릴 때: 1_1은 8080으로, 1_2는 대기상태나 기존포트 유지 (여기서는 8080만 활성화)
+                sudo sed -i "s/server app_server_1_1 .*/server app_server_1_1 127.0.0.1:8080 check/g" /etc/haproxy/haproxy.cfg
+              elif [ "$NEXT_PORT" == "8081" ]; then
+              # app1_2(8081)를 살릴 때
+              sudo sed -i "s/server app_server_1_2 .*/server app_server_1_2 127.0.0.1:8081 check/g" /etc/haproxy/haproxy.cfg
+              fi
+              
               sudo systemctl reload haproxy
-              echo "✅ HAProxy 트래픽 전환 완료: $NEXT_PORT"
+              echo "✅ HAProxy 설정 복구 및 트래픽 전환 완료: $NEXT_PORT"
             fi
             
             # HAProxy가 NEXT를 잡은 후 CURRENT를 꺼야 끊김이 없습니다.
