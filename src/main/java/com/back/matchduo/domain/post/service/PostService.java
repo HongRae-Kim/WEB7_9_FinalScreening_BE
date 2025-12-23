@@ -72,11 +72,11 @@ public class PostService {
     }
 
     // 모집글 단건 조회 (작성자 검증)
-    public PostUpdateResponse getPostDetail(Long postId, Long userId) {
+    public PostUpdateResponse getPostDetail(Long postId,Long userId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
 
-        postValidator.validatePostOwner(post, userId);
+        // postValidator.validatePostOwner(post, userId);
 
         return postListFacade.buildPostDetailForEdit(post);
     }

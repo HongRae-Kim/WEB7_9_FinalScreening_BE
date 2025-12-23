@@ -84,7 +84,7 @@ public class PostController {
 
     // 모집글 단건 조회 (작성자 검증)
     @GetMapping("/{postId}")
-    @Operation(summary = "모집글 단건 조회 (수정용)", description = "작성자 검증 후 수정 화면에 필요한 모집글 전체 정보를 조회합니다.")
+    @Operation(summary = "모집글 단건 조회", description = "모집글 전체 정보를 조회합니다.")
     public PostUpdateResponse getPostDetail(
             @PathVariable Long postId
     ) {
