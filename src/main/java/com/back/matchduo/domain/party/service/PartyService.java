@@ -61,9 +61,7 @@ public class PartyService {
             }
             User user = member.getUser();
             String nickname = user.getNickname();
-            String profileImage = (user.getProfileImage() != null)
-                    ? user.getProfileImage()
-                    : "https://opgg-static.akamaized.net/meta/images/profile_icons/profileIcon1.jpg";
+            String profileImage = user.getProfileImage();
 
             PartyByPostResponse.PartyMemberDto dto = PartyByPostResponse.PartyMemberDto.of(
                     member.getId(),
@@ -168,9 +166,7 @@ public class PartyService {
     private PartyMemberAddResponse createAddResponse(PartyMember member) {
         User user = member.getUser();
         String nickname = user.getNickname();
-        String profileImage = (user.getProfileImage() != null)
-                ? user.getProfileImage()
-                : "https://opgg-static.akamaized.net/meta/images/profile_icons/profileIcon1.jpg";
+        String profileImage = user.getProfileImage();
         return PartyMemberAddResponse.of(member, nickname, profileImage);
     }
 
@@ -223,10 +219,7 @@ public class PartyService {
 
         for (PartyMember member : members) {
             User user = member.getUser();
-            String profileImage = (user.getProfileImage() != null)
-                    ? user.getProfileImage()
-                    : "https://opgg-static.akamaized.net/meta/images/profile_icons/profileIcon1.jpg";
-
+            String profileImage = user.getProfileImage();
             PartyMemberListResponse.PartyMemberDto dto = PartyMemberListResponse.PartyMemberDto.of(
                     member.getId(),
                     user.getId(),
