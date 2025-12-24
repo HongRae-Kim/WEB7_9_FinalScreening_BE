@@ -158,6 +158,8 @@ public class PartyService {
             if (party.getStatus() == PartyStatus.RECRUIT) {
                 party.activateParty(LocalDateTime.now().plusHours(6));
             }
+
+            post.updateStatus(PostStatus.ACTIVE);
         }
 
         return responses;

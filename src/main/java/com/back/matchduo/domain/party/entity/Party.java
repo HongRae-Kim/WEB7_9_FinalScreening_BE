@@ -63,10 +63,10 @@ public class Party extends BaseEntity {
 
     // 파티장이 수동 파티완료 처리
     public void closeParty() {
-        if (this.status == PartyStatus.ACTIVE || this.status == PartyStatus.RECRUIT) {
+
             this.status = PartyStatus.CLOSED;
             this.closedAt = LocalDateTime.now();
-        }
+
     }
 
     // 스케줄러가 자동 파티완료 처리
