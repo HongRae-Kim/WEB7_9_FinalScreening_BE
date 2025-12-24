@@ -21,12 +21,10 @@ public class UserProfileService {
     private final BaseUrlProperties baseUrlProperties;
 
     public UserProfileResponse getProfile(User user) {
+        User currentUser = findUser(user.getId());
+
         return UserProfileResponse.from(
-                user.getId(),
-                user.getEmail(),
-                user.getProfileImage(),
-                user.getNickname(),
-                user.getComment(),
+                currentUser,
                 baseUrlProperties.getBaseUrl() // 수정한 부분
         );
     }
