@@ -55,5 +55,5 @@ custom:
 
   cookie:
     secure: true
-    sameSite: Lax
+    sameSite: None
     path: /
