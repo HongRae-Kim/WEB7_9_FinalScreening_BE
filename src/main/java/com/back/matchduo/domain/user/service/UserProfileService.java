@@ -4,6 +4,7 @@ import com.back.matchduo.domain.user.dto.request.UserUpdatePasswordRequest;
 import com.back.matchduo.domain.user.dto.response.UserProfileResponse;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
+import com.back.matchduo.global.config.BaseUrlProperties;
 import com.back.matchduo.global.exeption.CustomErrorCode;
 import com.back.matchduo.global.exeption.CustomException;
 import jakarta.transaction.Transactional;
@@ -17,11 +18,17 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserProfileService {
     private final UserRepository userRepository;
     private final FileService fileService;
+    private final BaseUrlProperties baseUrlProperties;
 
-    //프로필 조회
     public UserProfileResponse getProfile(User user) {
-        User currentUser = findUser(user.getId());
-        return UserProfileResponse.from(currentUser);
+        return UserProfileResponse.from(
+                user.getId(),
+                user.getEmail(),
+                user.getProfileImage(),
+                user.getNickname(),
+                user.getComment(),
+                baseUrlProperties.getBaseUrl() // 수정한 부분
+        );
     }
 
     // 닉네임 수정
