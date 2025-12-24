@@ -52,7 +52,7 @@ public class UserProfileController {
     @PatchMapping("/password")
     public ResponseEntity<Void> updatePassword(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody UserUpdatePasswordRequest request) {
+            @RequestBody UserUpdatePasswordRequest request) {
         userProfileService.updatePassword(userDetails.getUser(), request);
         return ResponseEntity.ok().build();
     }

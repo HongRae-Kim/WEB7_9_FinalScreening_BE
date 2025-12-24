@@ -45,15 +45,18 @@ public class UserProfileService {
     //비밀번호 변경 처리
     public void updatePassword(User user, UserUpdatePasswordRequest request) {
         User currentUser = findUser(user.getId());
-        //비밀번호 조건 미완료
-        if (isBlank(request.password()) || isBlank(request.newPassword()) || isBlank(request.newPasswordConfirm())) {
+        // 1. 형식 체크
+        if (isBlank(request.password()) || isBlank(request.newPassword()) ||
+                isBlank(request.newPasswordConfirm()) || !isValidPassword(request.newPassword())) {
             throw new CustomException(CustomErrorCode.PASSWORD_SHORTAGE);
         }
-        //비밀번호 불일치
+
+        // 2. 새 비번 일치 체크
         if (!request.newPassword().equals(request.newPasswordConfirm())) {
             throw new CustomException(CustomErrorCode.PASSWORD_INCONSISTENCY);
         }
-        //현재 비밀번호 불일치
+
+        // 3. 현재 비번 일치 체크
         if (!request.password().equals(currentUser.getPassword())) {
             throw new CustomException(CustomErrorCode.WRONG_CURRENT_PASSWORD);
         }
@@ -80,5 +83,12 @@ public class UserProfileService {
     private User findUser(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
+    }
+
+    //비밀번호 유효성 검사 로직
+    private boolean isValidPassword(String password) {
+        // 예: 8~20자, 영문, 숫자, 특수문자 포함 정규식
+        String regex = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,20}$";
+        return password != null && password.matches(regex);
     }
 }
