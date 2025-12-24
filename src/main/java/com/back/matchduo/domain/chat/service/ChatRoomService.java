@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +38,7 @@ public class ChatRoomService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final GameAccountRepository gameAccountRepository;
+    private final ChatUnreadCacheService chatUnreadCacheService;
 
     /**
      * 채팅방 생성 (멱등)
@@ -119,6 +122,9 @@ public class ChatRoomService {
         validateMember(room, userId);
 
         room.leave(userId);
+
+        chatUnreadCacheService.delete(chatRoomId, userId);
+
         return chatRoomRepository.save(room);
     }
 
@@ -136,37 +142,62 @@ public class ChatRoomService {
     }
 
     /**
-     * 내 채팅방 목록 조회 (Summary 포함)
+     * 내 채팅방 목록 조회 (Summary 포함) - Redis unreadCount 적용
      */
     @Transactional(readOnly = true)
     public List<ChatRoomSummaryResponse> getMyRoomsWithSummary(Long userId, Long cursorId, int size) {
         List<ChatRoom> rooms = getMyRooms(userId, cursorId, size);
 
+        if (rooms.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> roomIds = rooms.stream()
+                .map(ChatRoom::getId)
+                .toList();
+
+        // 마지막 메시지 배치 조회
+        Map<Long, ChatMessage> lastMessageMap = chatMessageRepository
+                .findRecentByRoomIds(roomIds)
+                .stream()
+                .filter(msg -> msg.getSessionNo().equals(
+                        msg.getChatRoom().getCurrentSessionNo()))
+                .collect(Collectors.toMap(
+                        msg -> msg.getChatRoom().getId(),
+                        msg -> msg,
+                        (first, second) -> first
+                ));
+
+        // 읽음 상태 배치 조회 (Fallback용)
+        Map<Long, ChatMessageRead> readStateMap = chatMessageReadRepository
+                .findByRoomIdsAndUserId(roomIds, userId)
+                .stream()
+                .collect(Collectors.toMap(
+                        read -> read.getChatRoom().getId(),
+                        read -> read
+                ));
+
+        // 응답 생성 (Redis에서 unreadCount 조회, 없으면 DB Fallback)
         return rooms.stream()
                 .map(room -> {
-                    Integer sessionNo = room.getCurrentSessionNo();
-                    if (sessionNo == null) {
-                        sessionNo = 1;
-                    }
+                    ChatMessage lastMessage = lastMessageMap.get(room.getId());
+                    ChatMessageRead readState = readStateMap.get(room.getId());
 
-                    // 마지막 메시지 조회
-                    ChatMessage lastMessage = chatMessageRepository
-                            .findFirstByChatRoomIdAndSessionNoOrderByIdDesc(room.getId(), sessionNo)
-                            .orElse(null);
-
-                    // 안 읽은 메시지 수 계산
-                    int unreadCount = 0;
-                    ChatMessageRead readState = chatMessageReadRepository
-                            .findByChatRoomIdAndUserId(room.getId(), userId)
-                            .orElse(null);
-
-                    if (readState != null && readState.getLastReadMessage() != null) {
-                        unreadCount = (int) chatMessageRepository.countUnread(
-                                room.getId(), sessionNo, readState.getLastReadMessage().getId());
-                    } else if (lastMessage != null) {
-                        // 읽은 메시지가 없으면 전체 메시지가 안 읽음
-                        unreadCount = (int) chatMessageRepository.countUnread(room.getId(), sessionNo, 0L);
-                    }
+                    // Redis 조회 + Fallback
+                    int unreadCount = chatUnreadCacheService.getOrSync(
+                            room.getId(),
+                            userId,
+                            () -> {
+                                if (lastMessage == null) {
+                                    return 0L;
+                                }
+                                Long lastReadId = (readState != null && readState.getLastReadMessage() != null)
+                                        ? readState.getLastReadMessage().getId()
+                                        : 0L;
+                                return chatMessageRepository.countUnread(
+                                        room.getId(), room.getCurrentSessionNo(), lastReadId);
+                            }
+                    );
 
                     return ChatRoomSummaryResponse.of(room, userId, lastMessage, unreadCount);
                 })
@@ -226,6 +257,10 @@ public class ChatRoomService {
     private void resetReadStates(ChatRoom room, User sender, User receiver) {
         // 벌크 업데이트로 한 번에 초기화
         chatMessageReadRepository.resetAllForRoom(room.getId());
+
+        // Redis 캐시 초기화
+        chatUnreadCacheService.reset(room.getId(), sender.getId());
+        chatUnreadCacheService.reset(room.getId(), receiver.getId());
 
         // 없는 경우 생성 (새 채팅방인 경우)
         getOrCreateReadState(room, sender);

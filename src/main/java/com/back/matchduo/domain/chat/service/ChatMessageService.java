@@ -30,19 +30,29 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatMessageReadRepository chatMessageReadRepository;
     private final UserRepository userRepository;
+    private final ChatUnreadCacheService chatUnreadCacheService;
 
     /** 메시지 전송 */
     public ChatMessage send(Long chatRoomId, Long senderId, MessageType type, String content) {
         ChatRoom room = getRoomOrThrow(chatRoomId);
 
         validateSenderId(senderId);
-        User sender = userRepository.getReferenceById(senderId);
+        User sender = userRepository.findById(senderId)
+                        .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
 
         validateMember(room, senderId);
         validateRoomOpen(room);
 
         ChatMessage message = ChatMessage.create(room, sender, type, content);
-        return chatMessageRepository.save(message);
+        ChatMessage saved = chatMessageRepository.save(message);
+
+        // Redis: 상대방 unreadCount 증가
+        Long receiverId = room.isSender(senderId)
+                ? room.getReceiver().getId()
+                : room.getSender().getId();
+        chatUnreadCacheService.increment(chatRoomId, receiverId);
+
+        return saved;
     }
 
     /**
@@ -108,7 +118,8 @@ public class ChatMessageService {
                 .findByChatRoomIdAndUserIdWithLock(room.getId(), requesterId)
                         .orElseGet(() -> {
                             try {
-                                User user = userRepository.getReferenceById(requesterId);
+                                User user = userRepository.findById(requesterId)
+                                        .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
                                 return chatMessageReadRepository.save(ChatMessageRead.create(room, user));
                             } catch (DataIntegrityViolationException e) {
                                 return chatMessageReadRepository.findByChatRoomIdAndUserId(room.getId(), requesterId)
@@ -118,7 +129,12 @@ public class ChatMessageService {
                         });
 
         readState.markReadUpTo(message);
-        return chatMessageReadRepository.save(readState);
+        ChatMessageRead saved = chatMessageReadRepository.save(readState);
+
+        // Redis: 내 unreadCount 초기화
+        chatUnreadCacheService.reset(chatRoomId, requesterId);
+
+        return saved;
     }
 
     /** 헬퍼 메서드 */
