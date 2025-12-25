@@ -10,10 +10,14 @@ spring:
   datasource:
     hikari:
       auto-commit: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update  # 15,16추가
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true

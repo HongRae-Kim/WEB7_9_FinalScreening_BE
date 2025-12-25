@@ -59,3 +59,15 @@ custom:
     secure: true
     sameSite: "None"
     path: /
+
+cloud:
+  aws:
+    s3:
+      bucket: matchduo-profile
+    region:
+      static: ap-northeast-2
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    stack:
+      auto: false

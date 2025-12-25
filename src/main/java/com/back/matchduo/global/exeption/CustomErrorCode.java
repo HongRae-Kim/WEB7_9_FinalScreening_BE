@@ -38,6 +38,8 @@ public enum CustomErrorCode {
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "그 닉네임은 이미 존재합니다."),
     BAN_MYSELF(HttpStatus.BAD_REQUEST, "자신을 차단할 수 없습니다."),
     NOT_BANNED(HttpStatus.BAD_REQUEST, "차단 내역이 없습니다."),
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
+    INVALID_FILE(HttpStatus.BAD_REQUEST, "잘못된 파일 요청입니다."),
 
     // 3. Search (검색)
     INVALID_SEARCH_KEYWORD(HttpStatus.BAD_REQUEST, "검색어는 공백일 수 없습니다."),
