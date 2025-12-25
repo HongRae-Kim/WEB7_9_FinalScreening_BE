@@ -95,8 +95,15 @@ public class UserProfileService {
 
     // 이미지 업로드
     public void updateProfileImage(User user, MultipartFile file) {
-        String imageUrl = fileStorageService.upload(file);
         User currentUser = findUser(user.getId());
+
+        //기존 이미지 삭제
+        if (currentUser.getProfileImage() != null) {
+            fileStorageService.delete(currentUser.getProfileImage());
+        }
+
+        //새 이미지 업로드
+        String imageUrl = fileStorageService.upload(file);
         currentUser.updateProfileImage(imageUrl);
     }
 

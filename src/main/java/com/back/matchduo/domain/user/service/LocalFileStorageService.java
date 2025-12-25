@@ -37,4 +37,16 @@ public class LocalFileStorageService implements FileStorageService {
 
         return "/uploads/profile/" + fileName;
     }
+
+    @Override
+    public void delete(String imageUrl) {
+        if (imageUrl == null) return;
+
+        Path path = Paths.get("." + imageUrl); // "/uploads/..." → 로컬 경로
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            throw new CustomException(CustomErrorCode.FILE_UPLOAD_FAILED);
+        }
+    }
 }

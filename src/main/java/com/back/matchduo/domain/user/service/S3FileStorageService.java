@@ -48,4 +48,14 @@ public class S3FileStorageService implements FileStorageService {
 
         return amazonS3.getUrl(bucket, fileName).toString();
     }
+
+    @Override
+    public void delete(String imageUrl) {
+        if (imageUrl == null) return;
+
+        // https://bucket.s3.region.amazonaws.com/profile/xxx.png
+        String key = imageUrl.substring(imageUrl.indexOf("profile/"));
+
+        amazonS3.deleteObject(bucket, key);
+    }
 }
