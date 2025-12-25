@@ -19,7 +19,7 @@ import java.util.List;
 @Transactional
 public class UserProfileService {
     private final UserRepository userRepository;
-    private final FileService fileService;
+    private final FileStorageService fileStorageService;
     private final BaseUrlProperties baseUrlProperties;
 
     public UserProfileResponse getProfile(User user) {
@@ -94,15 +94,10 @@ public class UserProfileService {
     }
 
     // 이미지 업로드
-    @Transactional
     public void updateProfileImage(User user, MultipartFile file) {
-        // 1. 파일 저장 및 웹 URL 경로 생성 (/images/uuid_파일명.png)
-        String savedPath = fileService.upload(file);
-
-        // 2. DB 업데이트 (영속성 컨텍스트 활용)
+        String imageUrl = fileStorageService.upload(file);
         User currentUser = findUser(user.getId());
-
-        currentUser.updateProfileImage(savedPath);
+        currentUser.updateProfileImage(imageUrl);
     }
 
     private boolean isBlank(String value) {
