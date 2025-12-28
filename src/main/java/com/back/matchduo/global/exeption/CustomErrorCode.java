@@ -99,7 +99,15 @@ public enum CustomErrorCode {
 
     // 7. Match (매치)
     MATCH_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "매치 정보를 가져오는데 실패했습니다."),
-    MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "매치 정보를 찾을 수 없습니다.");
+    MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "매치 정보를 찾을 수 없습니다."),
+
+    // 8. Review (리뷰)
+    MATCH_NOT_END(HttpStatus.BAD_REQUEST, "아직 게임이 종료되지 않아 리뷰를 작성할 수 없습니다."),
+    REVIEW_ALREADY_WRITTEN(HttpStatus.BAD_REQUEST, "이미 작성한 리뷰입니다."),
+    REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다."),
+    FORBIDDEN_REVIEW_MODIFY(HttpStatus.FORBIDDEN, "리뷰 수정 권한이 없습니다."),
+    FORBIDDEN_REVIEW_DELETE(HttpStatus.FORBIDDEN, "리뷰 삭제 권한이 없습니다.");
+
 
     private final HttpStatus status;
     private final String message;
