@@ -4,17 +4,18 @@ import com.back.matchduo.domain.user.repository.UserRepository;
 import com.back.matchduo.global.config.CookieProperties;
 import com.back.matchduo.global.config.JwtProperties;
 import com.back.matchduo.global.security.filter.JwtAuthenticationFilter;
+import com.back.matchduo.global.security.filter.RateLimitFilter;
 import com.back.matchduo.global.security.handler.JsonAccessDeniedHandler;
 import com.back.matchduo.global.security.handler.JsonAuthEntryPoint;
 import com.back.matchduo.global.security.jwt.JwtProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
@@ -26,7 +27,8 @@ public class SecurityConfig {
             HttpSecurity http,
             JwtProvider jwtProvider,
             UserRepository userRepository,
-            CorsConfigurationSource corsConfigurationSource
+            CorsConfigurationSource corsConfigurationSource,
+            RateLimitFilter rateLimitFilter
     ) throws Exception {
 
         http
@@ -107,6 +109,12 @@ public class SecurityConfig {
 
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
+                )
+
+                // Rate Limit 필터 등록
+                .addFilterBefore(
+                        rateLimitFilter,
+                        UsernamePasswordAuthenticationFilter.class
                 )
 
                 // JWT 인증 필터 등록

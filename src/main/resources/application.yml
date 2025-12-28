@@ -10,10 +10,14 @@ spring:
   datasource:
     hikari:
       auto-commit: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update  # 15,16추가
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -47,8 +51,8 @@ logging:
 custom:
   jwt:
     secretPattern: ${JWT_SECRET}
-    accessExpireSeconds: 1209600
-    refreshExpireSeconds: 1209600
+    accessExpireSeconds: 3600
+    refreshExpireSeconds: 604800
   cookie:
     secure: false
     path: /

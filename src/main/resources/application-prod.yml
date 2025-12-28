@@ -26,13 +26,17 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate # Flyway가 스키마 관리
     properties:
       hibernate:
         format_sql: false
         highlight_sql: false
         use_sql_comments: false
     show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true # 기존 DB에 적용 시 필요
+    locations: classpath:db/migration
 
 logging:
   level:
@@ -52,10 +56,22 @@ custom:
 
   jwt:
     secretPattern: ${JWT_SECRET}
-    accessExpireSeconds: 1209600
-    refreshExpireSeconds: 1209600
+    accessExpireSeconds: 3600
+    refreshExpireSeconds: 604800
 
   cookie:
     secure: true
     sameSite: "None"
     path: /
+
+cloud:
+  aws:
+    s3:
+      bucket: matchduo-profile
+    region:
+      static: ap-northeast-2
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    stack:
+      auto: false
