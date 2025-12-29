@@ -12,7 +12,8 @@ import com.back.matchduo.domain.review.repository.ReviewRepository;
 import com.back.matchduo.domain.review.repository.ReviewRequestRepository;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.back.matchduo.global.exeption.CustomErrorCode;
+import com.back.matchduo.global.exeption.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,34 +32,34 @@ public class ReviewService {
 
     // 리뷰 작성
     public ReviewCreateResponse createReview(Long currentUserId, ReviewCreateRequest reqDto) {
-        Long postId = reqDto.postId();
+        Long partyId = reqDto.partyId();
         Long revieweeId = reqDto.revieweeId();
 
         // 요청서 조회
-        ReviewRequest reviewRequest = reviewRequestRepository.findByPostIdAndRequestUserId(postId, currentUserId).
-                orElseThrow(() -> new IllegalArgumentException("참여하지 않은 파티입니다."));
+        ReviewRequest reviewRequest = reviewRequestRepository.findByPartyIdAndRequestUserId(partyId, currentUserId).
+                orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_MEMBER_NOT_MATCH));
 
         // 리뷰요청관리 상태 검증 : COMPLETED인가
         if(reviewRequest.getStatus() != ReviewRequestStatus.COMPLETED) {
-            throw new IllegalStateException("아직 게임이 종료되지 않아 리뷰를 작성할 수 없습니다.");
+            throw new CustomException(CustomErrorCode.MATCH_NOT_END);
         }
 
         // 중복 작성 검증
-        if(reviewRepository.existsByPostIdAndReviewerIdAndRevieweeId(postId,currentUserId,revieweeId)) {
-            throw new IllegalStateException("이미 작성한 리뷰입니다.");
+        if(reviewRepository.existsByPartyIdAndReviewerIdAndRevieweeId(partyId,currentUserId,revieweeId)) {
+            throw new CustomException(CustomErrorCode.REVIEW_ALREADY_WRITTEN);
         }
 
         // 파티원 여부 검증
-        if(!partyMemberRepository.existsByPartyIdAndUserId(postId,revieweeId)) {
-            throw new IllegalArgumentException("파티원이 아닌 대상입니다.");
+        if(!partyMemberRepository.existsByPartyIdAndUserId(partyId,revieweeId)) {
+            throw new CustomException(CustomErrorCode.PARTY_MEMBER_NOT_MATCH);
         }
 
         User reviewer = reviewRequest.getRequestUser();
         User reviewee = userRepository.findById(revieweeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
 
         Review review = Review.builder()
-                .post(reviewRequest.getPost())
+                .party(reviewRequest.getParty())
                 .reviewer(reviewer)
                 .reviewee(reviewee)
                 .reviewRequest(reviewRequest)
@@ -68,8 +69,8 @@ public class ReviewService {
 
         Review savedReview = reviewRepository.save(review);
 
-        long totalTeamMembers = partyMemberRepository.countByParty_PostId(postId) - 1;
-        long myReviewCount = reviewRepository.countByPostIdAndReviewerId(postId, currentUserId);
+        long totalTeamMembers = partyMemberRepository.countByPartyId(partyId) - 1;
+        long myReviewCount = reviewRepository.countByPartyIdAndReviewerId(partyId, currentUserId);
 
         if (myReviewCount == totalTeamMembers) reviewRequest.deactivate();
 
@@ -79,7 +80,7 @@ public class ReviewService {
     // 리뷰 수정
     public ReviewUpdateResponse updateReview(Long reviewId, Long userId, ReviewUpdateRequest reqDto) {
         Review review = reviewRepository.findByIdAndReviewerId(reviewId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("리뷰를 찾을 수 없거나 수정 권한이 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomErrorCode.FORBIDDEN_REVIEW_MODIFY));
 
         review.update(reqDto.emoji(), reqDto.content());
 
@@ -89,7 +90,7 @@ public class ReviewService {
     // 리뷰 삭제
     public void deleteReview(Long reviewId, Long userId) {
         Review review = reviewRepository.findByIdAndReviewerId(reviewId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("리뷰를 찾을 수 없거나 삭제 권한이 없습니다."));
+                .orElseThrow(() -> new CustomException(CustomErrorCode.FORBIDDEN_REVIEW_DELETE));
 
         review.deactivate();
     }
@@ -115,7 +116,7 @@ public class ReviewService {
     // 특정 유저 리뷰 분포 조회(비율)
     public ReviewDistributionResponse getReviewDistribution(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
         List<Object[]> results = reviewRepository.countReviewEmojisByRevieweeId(userId);
 
         long goodCount = 0;
@@ -134,5 +135,13 @@ public class ReviewService {
         }
 
         return ReviewDistributionResponse.of(userId,user.getNickname(),goodCount, normalCount, badCount);
+    }
+
+    public List<ReviewListResponse> getAllReviews() {
+        List<Review> reviews = reviewRepository.findAll();
+
+        return reviews.stream()
+                .map(ReviewListResponse::from)
+                .toList();
     }
 }
