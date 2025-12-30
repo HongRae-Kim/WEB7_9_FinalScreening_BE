@@ -37,6 +37,8 @@ spring:
           starttls:
             enable: true
         debug: true
+  flyway:
+    baseline-on-migrate: true
 
 springdoc:
   default-produces-media-type: application/json

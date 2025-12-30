@@ -7,6 +7,7 @@ import com.back.matchduo.global.exeption.CustomErrorCode;
 import com.back.matchduo.global.exeption.CustomException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,6 +17,7 @@ public class UserSignUpService {
 
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     public void signUp(UserSignUpRequest request) {
 
@@ -34,13 +36,16 @@ public class UserSignUpService {
             throw new CustomException(CustomErrorCode.WRONG_PASSWORD);
         }
 
+        //비밀번호 암호화 저장
+        String encodedPassword = passwordEncoder.encode(request.password());
+
         //닉네임 자동 생성
         String nickname = generateNickname(request.email());
 
         //User 생성
         User user = User.createUser(
                 request.email(),
-                request.password(),
+                encodedPassword,
                 nickname
         );
 
