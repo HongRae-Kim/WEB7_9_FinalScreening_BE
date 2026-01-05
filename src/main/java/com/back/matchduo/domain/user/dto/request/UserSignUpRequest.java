@@ -14,8 +14,8 @@ public record UserSignUpRequest(
         @NotBlank
         @Schema(description = "비밀번호", example = "password123!")
         @Pattern(
-                regexp = "^(?=.*[a-z])(?=.*\\d)(?=.*[!@#$%^&*])[a-z\\d!@#$%^&*]{8,100}$",
-                message = "비밀번호는 8글자 이상, 영어 소문자와 숫자, 특수문자(!, @, #, $, %, ^, &, *)를 포함해야 합니다."
+                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,100}$",
+                message = "비밀번호는 8글자 이상, 영어 대소문자와 숫자, 특수문자(!, @, #, $, %, ^, &, *)를 포함해야 합니다."
         )
         String password,
 
