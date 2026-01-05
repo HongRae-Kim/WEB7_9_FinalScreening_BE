@@ -5,6 +5,7 @@ import com.back.matchduo.domain.review.enums.ReviewRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +18,8 @@ public interface ReviewRequestRepository extends JpaRepository<ReviewRequest, Lo
     List<ReviewRequest> findByRequestUserIdAndStatusAndIsActiveTrue(Long userId, ReviewRequestStatus reviewRequestStatus);
 
     @Modifying
-    @Query("DELETE FROM ReviewRequest r WHERE r.party.id = :partyId AND r.status = :status")
+    @Transactional
+    @Query("DELETE FROM ReviewRequest r WHERE r.party.id = :partyId AND r.status = :reviewRequestStatus")
     void deleteByPartyIdAndStatus(Long partyId, ReviewRequestStatus reviewRequestStatus);
 
     boolean existsByPartyId(Long partyId);
