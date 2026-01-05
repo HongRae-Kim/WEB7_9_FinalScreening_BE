@@ -1,3 +1,4 @@
+
 # 첫 번째 스테이지: 빌드 스테이지
 FROM gradle:jdk-21-and-23-graal-jammy AS builder
 
@@ -24,6 +25,9 @@ RUN ./gradlew bootJar --no-daemon -x test
 # 두 번째 스테이지: 실행 스테이지
 FROM container-registry.oracle.com/graalvm/jdk:23
 
+# 타임존 설정 (Asia/Seoul)
+ENV TZ=Asia/Seoul
+
 # 작업 디렉토리 설정
 WORKDIR /app
 
@@ -31,4 +35,4 @@ WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 
 # 실행할 JAR 파일 지정
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "app.jar"]
+ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "-Duser.timezone=Asia/Seoul", "app.jar"]

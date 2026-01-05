@@ -4,14 +4,15 @@ import com.back.matchduo.domain.user.dto.request.UserUpdatePasswordRequest;
 import com.back.matchduo.domain.user.dto.response.UserProfileResponse;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
-import com.back.matchduo.global.config.BaseUrlProperties;
 import com.back.matchduo.global.exeption.CustomErrorCode;
 import com.back.matchduo.global.exeption.CustomException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -19,15 +20,14 @@ import java.util.List;
 @Transactional
 public class UserProfileService {
     private final UserRepository userRepository;
-    private final FileService fileService;
-    private final BaseUrlProperties baseUrlProperties;
+    private final FileStorageService fileStorageService;
+    private final PasswordEncoder passwordEncoder;
 
     public UserProfileResponse getProfile(User user) {
         User currentUser = findUser(user.getId());
 
         return UserProfileResponse.from(
-                currentUser,
-                baseUrlProperties.getBaseUrl() // 수정한 부분
+                currentUser
         );
     }
 
@@ -62,7 +62,11 @@ public class UserProfileService {
             throw new CustomException(CustomErrorCode.DUPLICATE_NICKNAME);
         }
 
+        //닉네임 저장
         currentUser.setNickname(nickname);
+
+        //닉네임 최근 수정 시각 저장
+        currentUser.setNicknameUpdatedAt(LocalDateTime.now());
     }
 
     // 자기소개 수정
@@ -86,23 +90,25 @@ public class UserProfileService {
         }
 
         // 3. 현재 비번 일치 체크
-        if (!request.password().equals(currentUser.getPassword())) {
+        if (!passwordEncoder.matches(request.password(), currentUser.getPassword())) {
             throw new CustomException(CustomErrorCode.WRONG_CURRENT_PASSWORD);
         }
         //비밀번호 작성
-        currentUser.setPassword(request.newPassword());
+        currentUser.setPassword(passwordEncoder.encode(request.newPassword()));
     }
 
     // 이미지 업로드
-    @Transactional
     public void updateProfileImage(User user, MultipartFile file) {
-        // 1. 파일 저장 및 웹 URL 경로 생성 (/images/uuid_파일명.png)
-        String savedPath = fileService.upload(file);
-
-        // 2. DB 업데이트 (영속성 컨텍스트 활용)
         User currentUser = findUser(user.getId());
 
-        currentUser.updateProfileImage(savedPath);
+        //기존 이미지 삭제
+        if (currentUser.getProfileImage() != null) {
+            fileStorageService.delete(currentUser.getProfileImage());
+        }
+
+        //새 이미지 업로드
+        String imageUrl = fileStorageService.upload(file);
+        currentUser.updateProfileImage(imageUrl);
     }
 
     private boolean isBlank(String value) {

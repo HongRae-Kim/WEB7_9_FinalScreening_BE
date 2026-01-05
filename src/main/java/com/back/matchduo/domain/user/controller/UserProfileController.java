@@ -5,8 +5,6 @@ import com.back.matchduo.domain.user.dto.request.UserUpdateNicknameRequest;
 import com.back.matchduo.domain.user.dto.request.UserUpdatePasswordRequest;
 import com.back.matchduo.domain.user.dto.response.UserProfileResponse;
 import com.back.matchduo.domain.user.service.UserProfileService;
-import com.back.matchduo.global.exeption.CustomErrorCode;
-import com.back.matchduo.global.exeption.CustomException;
 import com.back.matchduo.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -63,13 +61,8 @@ public class UserProfileController {
             @AuthenticationPrincipal
             CustomUserDetails userDetails,
 
-            @RequestPart(value = "file", required = false)
-            MultipartFile file
+            @RequestPart("file") MultipartFile file
     ) {
-        if (file == null || file.isEmpty()) {
-            throw new CustomException(CustomErrorCode.INVALID_REQUEST); // 파일이 없으면 에러
-        }
-
         userProfileService.updateProfileImage(userDetails.getUser(), file);
         return ResponseEntity.ok().build();
     }

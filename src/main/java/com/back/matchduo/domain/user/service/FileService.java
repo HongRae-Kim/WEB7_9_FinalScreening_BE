@@ -1,5 +1,8 @@
 package com.back.matchduo.domain.user.service;
 
+import com.back.matchduo.global.exeption.CustomErrorCode;
+import com.back.matchduo.global.exeption.CustomException;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -7,34 +10,44 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
+@Profile({"dev", "test"}) //prod 제외 → S3랑 충돌 방지
 public class FileService {
-    // 로컬 테스트용 경로 (실제 존재하는 폴더여야 함. 없으면 에러 납니다)
-    // 배포 시에는 application-prod.yml 등에서 외부 경로로 설정하는 것이 좋습니다.
-    private final String uploadDir = "C:/matchduo_uploads/";
+
+    //하드코딩 경로 제거 / 명확한 업로드 루트
+    private static final String UPLOAD_DIR = "uploads/profile";
 
     public String upload(MultipartFile file) {
-        if (file.isEmpty()) return null;
+
+        // INVALID_REQUEST 에러 코드
+        if (file == null || file.isEmpty()) {
+            throw new CustomException(CustomErrorCode.INVALID_FILE);
+        }
+
+        //디렉토리 경로
+        Path dirPath = Paths.get(UPLOAD_DIR);
+
+        //파일명 UUID 처리
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path filePath = dirPath.resolve(fileName);
 
         try {
-            // 1. 파일명 중복 방지 (UUID 사용)
-            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-            Path path = Paths.get(uploadDir + fileName);
+            //createDirectories IOException 처리
+            if (!Files.exists(dirPath)) {
+                Files.createDirectories(dirPath);
+            }
 
-            // 2. 폴더가 없으면 생성
-            Files.createDirectories(path.getParent());
+            //transferTo IOException 처리
+            file.transferTo(filePath.toFile());
 
-            // 3. 물리적 파일 저장
-            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-
-            // 4. DB에 저장할 "웹 접근 경로" 반환
-            // 나중에 브라우저에서 /images/파일명 으로 접근하게 됩니다.
-            return "/images/" + fileName;
         } catch (IOException e) {
-            throw new RuntimeException("파일 저장 중 오류 발생", e);
+            //RuntimeException
+            throw new CustomException(CustomErrorCode.FILE_UPLOAD_FAILED);
         }
+
+        //저장 경로 반환 (DB 저장용)
+        return "/uploads/profile/" + fileName;
     }
 }

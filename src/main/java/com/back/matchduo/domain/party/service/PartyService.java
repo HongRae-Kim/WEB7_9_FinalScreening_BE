@@ -9,13 +9,16 @@ import com.back.matchduo.domain.party.repository.PartyRepository;
 import com.back.matchduo.domain.post.entity.Post;
 import com.back.matchduo.domain.post.entity.PostStatus;
 import com.back.matchduo.domain.post.repository.PostRepository;
+import com.back.matchduo.domain.review.event.PartyStatusChangedEvent;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
 import com.back.matchduo.global.exeption.CustomErrorCode;
 import com.back.matchduo.global.exeption.CustomException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +36,7 @@ public class PartyService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final ChatRoomRepository chatRoomRepository;
-
+    private final ApplicationEventPublisher eventPublisher;
 
     public PartyByPostResponse getPartyByPostId(Long postId, Long currentUserId) {
         // 1. 파티 정보 조회
@@ -61,9 +64,7 @@ public class PartyService {
             }
             User user = member.getUser();
             String nickname = user.getNickname();
-            String profileImage = (user.getProfileImage() != null)
-                    ? user.getProfileImage()
-                    : "https://opgg-static.akamaized.net/meta/images/profile_icons/profileIcon1.jpg";
+            String profileImage = user.getProfileImage();
 
             PartyByPostResponse.PartyMemberDto dto = PartyByPostResponse.PartyMemberDto.of(
                     member.getId(),
@@ -156,8 +157,15 @@ public class PartyService {
         // 정원이 꽉 찼고, 현재 상태가 '모집 중(RECRUIT)'이라면 -> ACTIVE로 변경 및 6시간 타이머 설정
         if (currentCount >= post.getRecruitCount()) {
             if (party.getStatus() == PartyStatus.RECRUIT) {
+                PartyStatus prevStatus = party.getStatus();
                 party.activateParty(LocalDateTime.now().plusHours(6));
+
+                eventPublisher.publishEvent(new PartyStatusChangedEvent(
+                        party.getId(), prevStatus, party.getStatus()
+                ));
             }
+
+            post.updateStatus(PostStatus.ACTIVE);
         }
 
         return responses;
@@ -166,9 +174,7 @@ public class PartyService {
     private PartyMemberAddResponse createAddResponse(PartyMember member) {
         User user = member.getUser();
         String nickname = user.getNickname();
-        String profileImage = (user.getProfileImage() != null)
-                ? user.getProfileImage()
-                : "https://opgg-static.akamaized.net/meta/images/profile_icons/profileIcon1.jpg";
+        String profileImage = user.getProfileImage();
         return PartyMemberAddResponse.of(member, nickname, profileImage);
     }
 
@@ -200,7 +206,12 @@ public class PartyService {
         // 2. 상태 변경 (ACTIVE -> RECRUIT)
         // 만약 '게임 시작(ACTIVE)' 상태였는데 한 명이 나가면 -> 다시 '모집 중(RECRUIT)'으로 강등
         if (party.getStatus() == PartyStatus.ACTIVE) {
+            PartyStatus prevStatus = party.getStatus();
             party.downgradeToRecruit();
+
+            eventPublisher.publishEvent(new PartyStatusChangedEvent(
+                    party.getId(), prevStatus, party.getStatus()
+            ));
         }
 
         return PartyMemberRemoveResponse.from(member);
@@ -221,10 +232,7 @@ public class PartyService {
 
         for (PartyMember member : members) {
             User user = member.getUser();
-            String profileImage = (user.getProfileImage() != null)
-                    ? user.getProfileImage()
-                    : "https://opgg-static.akamaized.net/meta/images/profile_icons/profileIcon1.jpg";
-
+            String profileImage = user.getProfileImage();
             PartyMemberListResponse.PartyMemberDto dto = PartyMemberListResponse.PartyMemberDto.of(
                     member.getId(),
                     user.getId(),
@@ -245,7 +253,10 @@ public class PartyService {
     }
     // 내가 참여한 파티 목록 조회
     public MyPartyListResponse getMyPartyList(Long currentUserId) {
-        List<PartyMember> myMemberships = partyMemberRepository.findAllByUserIdWithParty(currentUserId);
+        List<PartyMember> myMemberships = partyMemberRepository.findAllByUserIdWithParty(currentUserId)
+                .stream()
+                .filter(pm -> pm.getState() == PartyMemberState.JOINED) // 👈 핵심: 나간 파티 제외
+                .toList();
 
         if (myMemberships.isEmpty()) {
             return new MyPartyListResponse(List.of());
@@ -307,12 +318,17 @@ public class PartyService {
         }
 
         // 상태 변경 (RECRUIT or ACTIVE -> CLOSED)
+        PartyStatus prevStatus = party.getStatus();
         party.closeParty();
 
         Post post = postRepository.findById(party.getPostId())
                 .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
 
         post.updateStatus(PostStatus.CLOSED);
+
+        eventPublisher.publishEvent(new PartyStatusChangedEvent(
+                party.getId(), prevStatus, party.getStatus()
+        ));
 
         return new PartyCloseResponse(
                 party.getId(),
@@ -349,11 +365,15 @@ public class PartyService {
         // 5. 파티 상태 및 게시글 상태 동기화 (ACTIVE -> RECRUIT)
         // 인원이 꽉 차서 ACTIVE 상태였다가, 한 명이 나가서 자리가 비게 된 경우
         if (party.getStatus() == PartyStatus.ACTIVE) {
+            PartyStatus prevStatus = party.getStatus();
             party.downgradeToRecruit(); // 파티 상태 변경
 
             // [중요] 게시글(Post) 상태도 모집 중으로 변경하여 목록에 다시 노출
             postRepository.findById(party.getPostId())
                     .ifPresent(post -> post.updateStatus(PostStatus.RECRUIT));
+            eventPublisher.publishEvent(new PartyStatusChangedEvent(
+                    party.getId(), prevStatus, party.getStatus()
+            ));
         }
 
         return PartyMemberLeaveResponse.of(partyId, member.getId());

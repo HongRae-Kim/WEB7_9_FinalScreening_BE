@@ -11,6 +11,7 @@ public enum CustomErrorCode {
     // 1. Common (공통)
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
+    TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."),
 
     // 2. User (사용자)
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
@@ -38,6 +39,8 @@ public enum CustomErrorCode {
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "그 닉네임은 이미 존재합니다."),
     BAN_MYSELF(HttpStatus.BAD_REQUEST, "자신을 차단할 수 없습니다."),
     NOT_BANNED(HttpStatus.BAD_REQUEST, "차단 내역이 없습니다."),
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
+    INVALID_FILE(HttpStatus.BAD_REQUEST, "잘못된 파일 요청입니다."),
 
     // 3. Search (검색)
     INVALID_SEARCH_KEYWORD(HttpStatus.BAD_REQUEST, "검색어는 공백일 수 없습니다."),
@@ -67,6 +70,7 @@ public enum CustomErrorCode {
     INVALID_LOOKING_POSITIONS(HttpStatus.BAD_REQUEST, "찾는 포지션 선택이 올바르지 않습니다."),
     INVALID_POST_STATUS_UPDATE(HttpStatus.BAD_REQUEST, "상태 변경은 FINISHED만 요청할 수 있습니다."),
     POST_ID_REQUIRED(HttpStatus.BAD_REQUEST, "postId는 필수입니다."),
+    POST_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "이미 삭제된 모집글입니다."),
 
 
     // 5. Chat (채팅)
@@ -96,7 +100,15 @@ public enum CustomErrorCode {
 
     // 7. Match (매치)
     MATCH_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "매치 정보를 가져오는데 실패했습니다."),
-    MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "매치 정보를 찾을 수 없습니다.");
+    MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "매치 정보를 찾을 수 없습니다."),
+
+    // 8. Review (리뷰)
+    MATCH_NOT_END(HttpStatus.BAD_REQUEST, "아직 게임이 종료되지 않아 리뷰를 작성할 수 없습니다."),
+    REVIEW_ALREADY_WRITTEN(HttpStatus.BAD_REQUEST, "이미 작성한 리뷰입니다."),
+    REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다."),
+    FORBIDDEN_REVIEW_MODIFY(HttpStatus.FORBIDDEN, "리뷰 수정 권한이 없습니다."),
+    FORBIDDEN_REVIEW_DELETE(HttpStatus.FORBIDDEN, "리뷰 삭제 권한이 없습니다.");
+
 
     private final HttpStatus status;
     private final String message;

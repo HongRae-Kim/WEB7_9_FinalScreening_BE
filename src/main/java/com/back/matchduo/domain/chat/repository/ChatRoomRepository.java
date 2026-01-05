@@ -79,6 +79,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "AND cr.senderLeft = false " +            // 상대가 방을 나갔으면 후보 아님
             "AND cr.sender.id NOT IN (" +             // 이미 파티원인 사람은 제외
             "   SELECT pm.user.id FROM PartyMember pm WHERE pm.party.postId = :postId"+
+            "   AND pm.state = 'JOINED'" + // 현재 참여중인 사람만 리스트에서 제외
             ")")
     List<User> findCandidateUsers(@Param("postId") Long postId, @Param("leaderId") Long leaderId);
+
+    void deleteBySenderIdOrReceiverId(Long senderId, Long receiverId);
 }

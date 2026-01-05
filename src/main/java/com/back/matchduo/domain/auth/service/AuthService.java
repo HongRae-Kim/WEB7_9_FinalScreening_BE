@@ -17,6 +17,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseCookie;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,19 +33,22 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final JwtProperties jwtProperties;
     private final AuthCookieProvider cookieProvider;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthService(
             UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
             JwtProvider jwtProvider,
             JwtProperties jwtProperties,
-            AuthCookieProvider cookieProvider
+            AuthCookieProvider cookieProvider,
+            PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtProvider = jwtProvider;
         this.jwtProperties = jwtProperties;
         this.cookieProvider = cookieProvider;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public LoginResponse login(LoginRequest req, HttpServletResponse res) {
@@ -52,7 +56,7 @@ public class AuthService {
                 .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_EMAIL));
 
         // 현재 정책: 평문 비교
-        if (!user.getPassword().equals(req.password())) {
+        if (!passwordEncoder.matches(req.password(), user.getPassword())) {
             throw new CustomException(CustomErrorCode.WRONG_PASSWORD);
         }
 

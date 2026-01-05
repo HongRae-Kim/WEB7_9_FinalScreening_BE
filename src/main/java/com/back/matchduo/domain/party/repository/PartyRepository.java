@@ -17,4 +17,6 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
     // 2. 만료 시간이 지났고, 상태가 ACTIVE인 파티 조회
     // 용도: 스케줄러가 6시간 지난 파티를 찾아서 자동으로 닫을 때 사용
     List<Party> findByStatusAndExpiresAtBefore(PartyStatus status, LocalDateTime now);
+
+    void deleteAllByLeaderId(Long leaderId);
 }

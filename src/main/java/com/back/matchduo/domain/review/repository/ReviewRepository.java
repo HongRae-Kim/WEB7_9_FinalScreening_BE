@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-    boolean existsByPostIdAndReviewerIdAndRevieweeId(Long postId, Long reviewerId, Long revieweeId);
+    boolean existsByPartyIdAndReviewerIdAndRevieweeId(Long partyId, Long reviewerId, Long revieweeId);
 
     Optional<Review> findByIdAndReviewerId(Long reviewId, Long reviewerId);
 
@@ -32,5 +32,11 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             "GROUP BY r.emoji")
     List<Object[]> countReviewEmojisByRevieweeId(@Param("userId") Long userId);
 
-    long countByPostIdAndReviewerId(Long postId, Long userId);
+    long countByPartyIdAndReviewerId(Long partyId, Long userId);
+
+    // 회원 탈퇴 시 내가 작성한 리뷰 삭제
+    void deleteByReviewerId(Long reviewerId);
+
+    // 회원 탈퇴 시 나에게 달린 리뷰 삭제
+    void deleteByRevieweeId(Long revieweeId);
 }
