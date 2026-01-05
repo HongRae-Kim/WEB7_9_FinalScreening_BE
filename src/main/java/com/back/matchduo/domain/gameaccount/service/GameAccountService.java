@@ -9,6 +9,7 @@ import com.back.matchduo.domain.gameaccount.dto.RiotApiDto;
 import com.back.matchduo.domain.gameaccount.entity.GameAccount;
 import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
 import com.back.matchduo.domain.gameaccount.repository.RankRepository;
+import com.back.matchduo.domain.post.repository.PostRepository;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
 import com.back.matchduo.global.exeption.CustomErrorCode;
@@ -35,6 +36,7 @@ public class GameAccountService {
     private final DataDragonService dataDragonService;
     private final RankService rankService;
     private final MatchService matchService;
+    private final PostRepository postRepository;
 
     public GameAccountService(
             GameAccountRepository gameAccountRepository,
@@ -43,7 +45,8 @@ public class GameAccountService {
             RankRepository rankRepository,
             DataDragonService dataDragonService,
             @Lazy RankService rankService,
-            @Lazy MatchService matchService) {
+            @Lazy MatchService matchService,
+            PostRepository postRepository) {
         this.gameAccountRepository = gameAccountRepository;
         this.userRepository = userRepository;
         this.riotApiClient = riotApiClient;
@@ -51,6 +54,7 @@ public class GameAccountService {
         this.dataDragonService = dataDragonService;
         this.rankService = rankService;
         this.matchService = matchService;
+        this.postRepository = postRepository;
     }
 
     private static final String GAME_TYPE_LEAGUE_OF_LEGENDS = "LEAGUE_OF_LEGENDS";
@@ -280,6 +284,7 @@ public class GameAccountService {
     /**
      * 게임 계정 삭제 (연동 해제)
      * 게임 계정 삭제 시 관련된 랭크 정보, 매치 정보, 선호 챔피언 정보도 함께 삭제됩니다.
+     * 활성 모집글이 있는 경우 삭제할 수 없습니다.
      * @param gameAccountId 게임 계정 ID
      * @param userId 인증된 사용자 ID
      */
@@ -290,6 +295,11 @@ public class GameAccountService {
         // 소유자 검증
         if (!gameAccount.getUser().getId().equals(userId)) {
             throw new CustomException(CustomErrorCode.FORBIDDEN_GAME_ACCOUNT);
+        }
+
+        // 활성 모집글이 있는지 확인 (isActive = true, status != CLOSED)
+        if (postRepository.existsActivePostByGameAccountId(gameAccountId)) {
+            throw new CustomException(CustomErrorCode.GAME_ACCOUNT_HAS_ACTIVE_POST);
         }
 
         // 관련된 매치 정보 및 선호 챔피언 정보 먼저 삭제 (외래키 제약조건 때문에)
