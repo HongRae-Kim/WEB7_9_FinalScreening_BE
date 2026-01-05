@@ -1,14 +1,16 @@
-package com.back.matchduo;
+package com.back.matchduo.domain.party.controller;
 
 import com.back.matchduo.domain.chat.entity.ChatRoom;
 import com.back.matchduo.domain.chat.repository.ChatRoomRepository;
-import com.back.matchduo.domain.post.entity.GameMode;
+import com.back.matchduo.domain.gameaccount.entity.GameAccount;
+import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
 import com.back.matchduo.domain.party.dto.request.PartyMemberAddRequest;
 import com.back.matchduo.domain.party.entity.Party;
 import com.back.matchduo.domain.party.entity.PartyMember;
 import com.back.matchduo.domain.party.entity.PartyMemberRole;
 import com.back.matchduo.domain.party.repository.PartyMemberRepository;
 import com.back.matchduo.domain.party.repository.PartyRepository;
+import com.back.matchduo.domain.post.entity.GameMode;
 import com.back.matchduo.domain.post.entity.Position;
 import com.back.matchduo.domain.post.entity.Post;
 import com.back.matchduo.domain.post.entity.QueueType;
@@ -32,7 +34,8 @@ import java.util.List;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -62,6 +65,9 @@ class PartyControllerTest {
     @Autowired
     private ChatRoomRepository chatRoomRepository;
 
+    @Autowired
+    private GameAccountRepository gameAccountRepository;
+
     private Long testPostId;
     private User leaderUser;
     private User memberUser;
@@ -70,10 +76,8 @@ class PartyControllerTest {
     private User targetUser2;
     private PartyMember leaderMember;
     private PartyMember normalMember;
-
-
-    private static final String LEADER_IMG = "https://opgg-static.akamaized.net/meta/images/profile_icons/profileIcon1.jpg";
-    private static final String MEMBER_IMG = "https://opgg-static.akamaized.net/meta/images/profile_icons/profileIcon1.jpg";
+    private GameAccount leaderGameAccount;
+    private GameAccount targetUser1GameAccount;
 
     @BeforeAll
     void setUp() {
@@ -95,13 +99,25 @@ class PartyControllerTest {
                 .build();
         userRepository.save(memberUser);
 
-        // 3. 모집글(Post) 생성을 위한 GameMode 저장
+        // 3. 게임 계정 생성 (파티장용)
+        leaderGameAccount = GameAccount.builder()
+                .gameNickname("LeaderNickname")
+                .gameTag("KR1")
+                .gameType("LOL")
+                .puuid("test-puuid-leader")
+                .profileIconId(1)
+                .user(leaderUser)
+                .build();
+        gameAccountRepository.save(leaderGameAccount);
+
+        // 4. 모집글(Post) 생성을 위한 GameMode 저장
         GameMode gameMode = GameMode.SUMMONERS_RIFT;
 
-        // 4. 모집글(Post) 생성 및 저장
+        // 5. 모집글(Post) 생성 및 저장
         // memo를 제목으로 사용하므로 "테스트 모집글"이 제목이 됨
         Post post = Post.builder()
                 .user(leaderUser)
+                .gameAccount(leaderGameAccount)
                 .gameMode(gameMode)
                 .queueType(QueueType.DUO)
                 .myPosition(Position.TOP)
@@ -113,21 +129,32 @@ class PartyControllerTest {
         postRepository.save(post);
         testPostId = post.getId();
 
-        // 5. 파티 생성 (초기 상태: RECRUIT)
+        // 6. 파티 생성 (초기 상태: RECRUIT)
         testParty = new Party(testPostId, leaderUser.getId());
         partyRepository.save(testParty);
 
-        // 6. 멤버 추가
+        // 7. 멤버 추가
         leaderMember = new PartyMember(testParty, leaderUser, PartyMemberRole.LEADER);
         partyMemberRepository.save(leaderMember);
 
         normalMember = new PartyMember(testParty, memberUser, PartyMemberRole.MEMBER);
         partyMemberRepository.save(normalMember);
 
-        // 7. 초대 대상 유저 생성 (이미지 없는 경우 테스트)
+        // 8. 초대 대상 유저 생성 (이미지 없는 경우 테스트)
         targetUser1 = User.builder()
                 .email("target1@test.com").password("1234").nickname("초대대상1").verificationCode("0000").build();
         userRepository.save(targetUser1);
+
+        // targetUser1용 게임 계정 생성
+        targetUser1GameAccount = GameAccount.builder()
+                .gameNickname("Target1Nickname")
+                .gameTag("KR1")
+                .gameType("LOL")
+                .puuid("test-puuid-target1")
+                .profileIconId(1)
+                .user(targetUser1)
+                .build();
+        gameAccountRepository.save(targetUser1GameAccount);
 
         targetUser2 = User.builder()
                 .email("target2@test.com").password("1234").nickname("초대대상2").verificationCode("0000").build();
@@ -155,8 +182,8 @@ class PartyControllerTest {
                     // 초기 상태 RECRUIT 확인 (생성자 로직 변경 반영)
                     .andExpect(jsonPath("$.status").value("RECRUIT"))
                     .andExpect(jsonPath("$.currentCount").value(2))
-                    .andExpect(jsonPath("$.members[0].profileImage").value(LEADER_IMG))
-                    .andExpect(jsonPath("$.members[1].profileImage").value(MEMBER_IMG))
+                    .andExpect(jsonPath("$.members[0].profileImage").isEmpty())
+                    .andExpect(jsonPath("$.members[1].profileImage").isEmpty())
                     .andDo(print());
         }
 
@@ -380,8 +407,8 @@ class PartyControllerTest {
             // then
             resultActions
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.members[0].profileImage").value(LEADER_IMG))
-                    .andExpect(jsonPath("$.data.members[1].profileImage").value(MEMBER_IMG)) // ★ 이미지 검증
+                    .andExpect(jsonPath("$.data.members[0].profileImage").isEmpty())
+                    .andExpect(jsonPath("$.data.members[1].profileImage").isEmpty())
                     .andDo(print());
         }
     }
@@ -419,6 +446,7 @@ class PartyControllerTest {
             // 2. 두 번째 모집글 생성 (memo를 제목으로 사용)
             Post secondPost = Post.builder()
                     .user(targetUser1) // targetUser1이 쓴 글
+                    .gameAccount(targetUser1GameAccount)
                     .gameMode(flexMode)
                     .queueType(QueueType.FLEX)
                     .myPosition(Position.MID)
@@ -623,6 +651,7 @@ class PartyControllerTest {
             // 새로운 모집글 생성 (채팅 기록 없음)
             Post newPost = Post.builder()
                     .user(leaderUser)
+                    .gameAccount(leaderGameAccount)
                     .gameMode(GameMode.SUMMONERS_RIFT) // [변경] Enum 상수 직접 사용
                     .queueType(QueueType.DUO)
                     .myPosition(Position.ADC)
@@ -649,4 +678,3 @@ class PartyControllerTest {
         }
     }
 }
-
