@@ -37,4 +37,6 @@ public interface PartyMemberRepository extends JpaRepository<PartyMember, Long> 
     int countByPartyIdAndState(Long partyId, PartyMemberState partyMemberState);
 
     List<PartyMember> findAllByPartyId(Long partyId);
+
+    void deleteAllByUser_Id(Long userId);
 }
