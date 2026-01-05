@@ -82,4 +82,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "   AND pm.state = 'JOINED'" + // 현재 참여중인 사람만 리스트에서 제외
             ")")
     List<User> findCandidateUsers(@Param("postId") Long postId, @Param("leaderId") Long leaderId);
+
+    void deleteBySenderIdOrReceiverId(Long senderId, Long receiverId);
 }

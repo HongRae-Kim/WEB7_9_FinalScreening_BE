@@ -21,4 +21,6 @@ public interface GameAccountRepository extends JpaRepository<GameAccount, Long> 
      * @return 게임 계정 목록
      */
     Optional<GameAccount> findByUser_Id(Long userId);
+
+    void deleteAllByUser_Id(Long userId);
 }

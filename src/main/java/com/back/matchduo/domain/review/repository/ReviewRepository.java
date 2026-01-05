@@ -33,4 +33,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Object[]> countReviewEmojisByRevieweeId(@Param("userId") Long userId);
 
     long countByPartyIdAndReviewerId(Long partyId, Long userId);
+
+    // 회원 탈퇴 시 내가 작성한 리뷰 삭제
+    void deleteByReviewerId(Long reviewerId);
+
+    // 회원 탈퇴 시 나에게 달린 리뷰 삭제
+    void deleteByRevieweeId(Long revieweeId);
 }
