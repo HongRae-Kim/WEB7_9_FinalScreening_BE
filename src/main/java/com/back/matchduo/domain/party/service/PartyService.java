@@ -253,7 +253,10 @@ public class PartyService {
     }
     // 내가 참여한 파티 목록 조회
     public MyPartyListResponse getMyPartyList(Long currentUserId) {
-        List<PartyMember> myMemberships = partyMemberRepository.findAllByUserIdWithParty(currentUserId);
+        List<PartyMember> myMemberships = partyMemberRepository.findAllByUserIdWithParty(currentUserId)
+                .stream()
+                .filter(pm -> pm.getState() == PartyMemberState.JOINED) // 👈 핵심: 나간 파티 제외
+                .toList();
 
         if (myMemberships.isEmpty()) {
             return new MyPartyListResponse(List.of());
