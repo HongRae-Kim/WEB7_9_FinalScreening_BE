@@ -6,6 +6,8 @@ import com.back.matchduo.domain.chat.entity.ChatMessage;
 import com.back.matchduo.domain.chat.entity.ChatMessageRead;
 import com.back.matchduo.domain.chat.entity.ChatRoom;
 import com.back.matchduo.domain.chat.entity.MessageType;
+import com.back.matchduo.domain.gameaccount.entity.GameAccount;
+import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
 import com.back.matchduo.domain.post.entity.GameMode;
 import com.back.matchduo.domain.post.entity.Position;
 import com.back.matchduo.domain.post.entity.Post;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
+@ActiveProfiles("test")
 class ChatServiceTest {
 
     @Autowired
@@ -41,8 +45,12 @@ class ChatServiceTest {
     @Autowired
     private PostRepository postRepository;
 
+    @Autowired
+    private GameAccountRepository gameAccountRepository;
+
     private User postAuthor;
     private User applicant;
+    private GameAccount testGameAccount;
     private Post testPost;
 
     @BeforeEach
@@ -61,10 +69,19 @@ class ChatServiceTest {
                 .verificationCode("5678")
                 .build());
 
+        testGameAccount = gameAccountRepository.save(GameAccount.builder()
+                .gameNickname("채팅테스트게이머")
+                .gameTag("KR1")
+                .gameType("LOL")
+                .puuid("chat-test-puuid-12345")
+                .profileIconId(1234)
+                .user(postAuthor)
+                .build());
 
         testPost = postRepository.save(Post.builder()
                 .user(postAuthor)
-                .gameMode(GameMode.SUMMONERS_RIFT) // [변경] Enum 상수명에 맞게 수정 (예: SUMMONERS_RIFT)
+                .gameAccount(testGameAccount)
+                .gameMode(GameMode.SUMMONERS_RIFT)
                 .queueType(QueueType.DUO)
                 .myPosition(Position.MID)
                 .lookingPositions("[\"TOP\", \"JUNGLE\"]")
