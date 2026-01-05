@@ -81,4 +81,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "   SELECT pm.user.id FROM PartyMember pm WHERE pm.party.postId = :postId"+
             ")")
     List<User> findCandidateUsers(@Param("postId") Long postId, @Param("leaderId") Long leaderId);
+
+    void deleteBySenderIdOrReceiverId(Long senderId, Long receiverId);
 }

@@ -13,4 +13,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 내가 참여한 파티 리스트를 보여줄 때 사용
     @Query("SELECT p FROM Post p JOIN FETCH p.gameMode WHERE p.id IN :ids")
     List<Post> findAllByIdInWithGameMode(@Param("ids") List<Long> ids);
+
+    void deleteAllByUser_Id(Long userId);
 }
