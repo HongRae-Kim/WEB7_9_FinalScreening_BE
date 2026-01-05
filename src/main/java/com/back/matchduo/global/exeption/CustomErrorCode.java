@@ -97,6 +97,7 @@ public enum CustomErrorCode {
     GAME_ACCOUNT_NO_PUUID(HttpStatus.BAD_REQUEST, "게임 계정에 puuid가 없습니다. 먼저 게임 계정을 등록해주세요."),
     RIOT_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "Riot API에서 해당 게임 계정을 찾을 수 없습니다. 닉네임과 태그를 확인해주세요."),
     RANK_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "랭크 정보를 가져오는데 실패했습니다."),
+    GAME_ACCOUNT_HAS_ACTIVE_POST(HttpStatus.BAD_REQUEST, "활성 모집글이 있는 게임 계정은 삭제할 수 없습니다. 먼저 모집글을 종료해주세요."),
 
     // 7. Match (매치)
     MATCH_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "매치 정보를 가져오는데 실패했습니다."),

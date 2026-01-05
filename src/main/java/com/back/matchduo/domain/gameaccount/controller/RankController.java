@@ -63,7 +63,12 @@ public class RankController {
     public ResponseEntity<List<RankResponse>> getRanksByGameAccountId(
             @Parameter(description = "게임 계정 ID", required = true)
             @PathVariable Long gameAccountId) {
-        Long userId = AuthPrincipal.getUserId();
+        Long userId = null;
+        try {
+            userId = AuthPrincipal.getUserId();
+        } catch (Exception ignored) {
+            // 비로그인 허용
+        }
         List<RankResponse> responses = rankService.getRanksByGameAccountId(gameAccountId, userId);
         return ResponseEntity.ok(responses);
     }
