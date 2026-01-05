@@ -15,6 +15,38 @@ spring:
         format_sql: true
         highlight_sql: false
         use_sql_comments: true
-cloud:
-  aws:
+  flyway:
     enabled: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: ${REDIS_PW}
+  mail:
+    host: test
+    port: 01010
+
+custom:
+  jwt:
+    secretPattern: ${JWT_SECRET}
+    accessExpireSeconds: 3600
+    refreshExpireSeconds: 604800
+  cookie:
+    secure: false
+    sameSite: Lax
+    path: /
+
+riot:
+  api:
+    base-url: test
+    key: test-mock-key
+
+logging:
+  level:
+    root: WARN
+    com.back.matchduo: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+    org.springframework.web: WARN
+    org.springframework.messaging: WARN
+    com.zaxxer.hikari: WARN
