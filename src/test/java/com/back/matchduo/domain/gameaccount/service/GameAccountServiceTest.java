@@ -10,6 +10,7 @@ import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
 import com.back.matchduo.domain.gameaccount.repository.RankRepository;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
+import com.back.matchduo.domain.post.repository.PostRepository;
 import com.back.matchduo.global.exeption.CustomException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +56,9 @@ class GameAccountServiceTest {
     @Mock
     private MatchService matchService;
 
+    @Mock
+    private PostRepository postRepository;
+
     private GameAccountService gameAccountService;
 
     private User testUser;
@@ -76,7 +80,8 @@ class GameAccountServiceTest {
                 rankRepository,
                 dataDragonService,
                 rankService,
-                matchService
+                matchService,
+                postRepository
         );
 
         testUser = User.builder()
