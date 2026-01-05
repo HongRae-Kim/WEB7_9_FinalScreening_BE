@@ -60,7 +60,12 @@ public class GameAccountController {
     @GetMapping("/{gameAccountId}")
     public ResponseEntity<GameAccountResponse> getGameAccount(
             @PathVariable Long gameAccountId) {
-        Long userId = AuthPrincipal.getUserId();
+        Long userId = null;
+        try {
+            userId = AuthPrincipal.getUserId();
+        } catch (Exception ignored) {
+            // 비로그인 허용
+        }
         GameAccountResponse response = gameAccountService.getGameAccount(gameAccountId, userId);
         return ResponseEntity.ok(response);
     }

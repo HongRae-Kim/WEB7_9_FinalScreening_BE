@@ -74,7 +74,12 @@ public class MatchController {
             @PathVariable Long gameAccountId,
             @Parameter(description = "조회할 매치 개수 (기본값: 20)")
             @RequestParam(defaultValue = "20") int count) {
-        Long userId = AuthPrincipal.getUserId();
+        Long userId = null;
+        try {
+            userId = AuthPrincipal.getUserId();
+        } catch (Exception ignored) {
+            // 비로그인 허용
+        }
         List<MatchResponse> responses = matchService.getRecentMatches(gameAccountId, userId, count);
         return ResponseEntity.ok(responses);
     }
@@ -97,7 +102,12 @@ public class MatchController {
     public ResponseEntity<List<FavoriteChampionResponse>> getFavoriteChampions(
             @Parameter(description = "게임 계정 ID", required = true)
             @PathVariable Long gameAccountId) {
-        Long userId = AuthPrincipal.getUserId();
+        Long userId = null;
+        try {
+            userId = AuthPrincipal.getUserId();
+        } catch (Exception ignored) {
+            // 비로그인 허용
+        }
         List<FavoriteChampionResponse> responses = matchService.getFavoriteChampions(gameAccountId, userId);
         return ResponseEntity.ok(responses);
     }

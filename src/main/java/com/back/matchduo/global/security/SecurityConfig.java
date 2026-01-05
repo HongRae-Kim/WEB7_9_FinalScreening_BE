@@ -94,6 +94,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/parties/*/members"
                         ).permitAll()
+
+                        // 게임 계정 조회(GET)만 공개 (게임 계정 정보, 전적 조회, 랭크 조회, 선호 챔피언 조회)
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/game-accounts/*",
+                                "/api/game-accounts/*/matches",
+                                "/api/game-accounts/*/ranks",
+                                "/api/game-accounts/*/champions/favorite"
+                        ).permitAll()
                         // TODO: 공개 API는 여기 추가
                         // 예: 모집글 목록/상세, 게임모드 목록 등
                         // .requestMatchers("/api/v1/posts/**").permitAll()
