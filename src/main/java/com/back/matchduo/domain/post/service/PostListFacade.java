@@ -1,9 +1,7 @@
 package com.back.matchduo.domain.post.service;
 
 import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
-import com.back.matchduo.domain.party.entity.Party;
-import com.back.matchduo.domain.party.entity.PartyMember;
-import com.back.matchduo.domain.party.entity.PartyMemberRole;
+import com.back.matchduo.domain.party.entity.*;
 import com.back.matchduo.domain.gameaccount.entity.FavoriteChampion;
 import com.back.matchduo.domain.gameaccount.entity.GameAccount;
 import com.back.matchduo.domain.gameaccount.entity.MatchParticipant;
@@ -32,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -143,6 +142,27 @@ public class PostListFacade {
                 request.recruitCount(),
                 request.memo()
         );
+        Party party = partyRepository.findByPostId(post.getId())
+                .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
+
+        // 현재 파티원 수 조회 (JOINED 상태만)
+        int currentMemberCount = partyMemberRepository.countByPartyIdAndState(party.getId(), PartyMemberState.JOINED);
+        int newRecruitCount = request.recruitCount();
+
+        // Case 1: 모집 정원을 줄여서, 현재 인원보다 같거나 작아진 경우 -> ACTIVE (모집 완료)
+        if (currentMemberCount >= newRecruitCount) {
+            if (party.getStatus() == PartyStatus.RECRUIT) {
+                party.activateParty(LocalDateTime.now().plusHours(6));
+                post.updateStatus(PostStatus.ACTIVE);
+            }
+        }
+        // Case 2: 모집 정원을 늘려서, 다시 자리가 생긴 경우 -> RECRUIT (모집 중)
+        else {
+            if (party.getStatus() == PartyStatus.ACTIVE) {
+                party.downgradeToRecruit();
+                post.updateStatus(PostStatus.RECRUIT);
+            }
+        }
 
         // 응답 조립 → 단건 조회로 조립 : N+1 이슈가 아니므로 단순 조회로 구성
         User writer = post.getUser(); // 트랜잭션 내
