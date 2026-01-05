@@ -1,12 +1,12 @@
 package com.back.matchduo.domain.post.service;
 
-import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
-import com.back.matchduo.domain.party.entity.*;
 import com.back.matchduo.domain.gameaccount.entity.FavoriteChampion;
 import com.back.matchduo.domain.gameaccount.entity.GameAccount;
 import com.back.matchduo.domain.gameaccount.entity.MatchParticipant;
 import com.back.matchduo.domain.gameaccount.entity.Rank;
+import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
 import com.back.matchduo.domain.gameaccount.service.DataDragonService;
+import com.back.matchduo.domain.party.entity.*;
 import com.back.matchduo.domain.party.repository.PartyMemberRepository;
 import com.back.matchduo.domain.party.repository.PartyRepository;
 import com.back.matchduo.domain.post.dto.request.PostCreateRequest;
@@ -17,6 +17,7 @@ import com.back.matchduo.domain.post.repository.PostGameAccountQueryRepository;
 import com.back.matchduo.domain.post.repository.PostListQueryRepository;
 import com.back.matchduo.domain.post.repository.PostPartyQueryRepository;
 import com.back.matchduo.domain.post.repository.PostRepository;
+import com.back.matchduo.domain.review.event.PartyStatusChangedEvent;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserBanRepository;
 import com.back.matchduo.domain.user.repository.UserRepository;
@@ -27,11 +28,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,6 +49,7 @@ public class PostListFacade {
     private final UserBanRepository userBanRepository;
     private final EntityManager entityManager;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final PartyRepository partyRepository;
     private final PartyMemberRepository partyMemberRepository;
@@ -145,6 +151,8 @@ public class PostListFacade {
         Party party = partyRepository.findByPostId(post.getId())
                 .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
 
+        PartyStatus prevStatus = party.getStatus();
+
         // 현재 파티원 수 조회 (JOINED 상태만)
         int currentMemberCount = partyMemberRepository.countByPartyIdAndState(party.getId(), PartyMemberState.JOINED);
         int newRecruitCount = request.recruitCount();
@@ -154,6 +162,8 @@ public class PostListFacade {
             if (party.getStatus() == PartyStatus.RECRUIT) {
                 party.activateParty(LocalDateTime.now().plusHours(6));
                 post.updateStatus(PostStatus.ACTIVE);
+
+                eventPublisher.publishEvent(new PartyStatusChangedEvent(party.getId(), prevStatus, PartyStatus.ACTIVE));
             }
         }
         // Case 2: 모집 정원을 늘려서, 다시 자리가 생긴 경우 -> RECRUIT (모집 중)
@@ -161,6 +171,8 @@ public class PostListFacade {
             if (party.getStatus() == PartyStatus.ACTIVE) {
                 party.downgradeToRecruit();
                 post.updateStatus(PostStatus.RECRUIT);
+
+                eventPublisher.publishEvent(new PartyStatusChangedEvent(party.getId(), prevStatus, PartyStatus.RECRUIT));
             }
         }
 
