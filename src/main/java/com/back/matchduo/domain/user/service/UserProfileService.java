@@ -72,28 +72,63 @@ public class UserProfileService {
     // 자기소개 수정
     public void updateComment(User user, String comment) {
         User currentUser = findUser(user.getId());
+        if (comment != null) {
+
+            // 1. 길이 제한 (40자 초과)
+            if (comment.length() > 40) {
+                throw new CustomException(CustomErrorCode.INVALID_COMMENT_LENGTH);
+            }
+
+            // 2. 기존 소개글과 동일한 경우
+            if (comment.equals(currentUser.getComment())) {
+                throw new CustomException(CustomErrorCode.SAME_COMMENT);
+            }
+
+            // 3. 비속어 체크
+            String lowerComment = comment.toLowerCase();
+            for (String banned : bannedWords) {
+                if (lowerComment.contains(banned.toLowerCase())) {
+                    throw new CustomException(CustomErrorCode.BANNED_WORD_INCLUDED);
+                }
+            }
+        }
         currentUser.setComment(comment); // null일 경우에도 수정 가능하게 유지 (소개 삭제 기능)
     }
 
     //비밀번호 변경 처리
     public void updatePassword(User user, UserUpdatePasswordRequest request) {
         User currentUser = findUser(user.getId());
-        // 1. 형식 체크
-        if (isBlank(request.password()) || isBlank(request.newPassword()) ||
-                isBlank(request.newPasswordConfirm()) || !isValidPassword(request.newPassword())) {
-            throw new CustomException(CustomErrorCode.PASSWORD_SHORTAGE);
+
+        // 1. 현재 비밀번호에 빈칸 검수
+        if (isBlank(request.password())) {
+            throw new CustomException(CustomErrorCode.PASSWORD_REQUIRED);
         }
 
-        // 2. 새 비번 일치 체크
+        // 2. 형식 체크
+        if (!isValidPassword(request.newPassword())) {
+            throw new CustomException(CustomErrorCode.INVALID_PASSWORD_FORMAT);
+        }
+
+        // 3. 새 비밀번호 / 확인 미입력
+        if (isBlank(request.newPassword()) || isBlank(request.newPasswordConfirm())) {
+            throw new CustomException(CustomErrorCode.INVALID_PASSWORD_FORMAT);
+        }
+
+        // 4. 새 비번 일치 체크
         if (!request.newPassword().equals(request.newPasswordConfirm())) {
             throw new CustomException(CustomErrorCode.PASSWORD_INCONSISTENCY);
         }
 
-        // 3. 현재 비번 일치 체크
+        // 5. 현재 비번 일치 체크
         if (!passwordEncoder.matches(request.password(), currentUser.getPassword())) {
             throw new CustomException(CustomErrorCode.WRONG_CURRENT_PASSWORD);
         }
-        //비밀번호 작성
+
+        // 6. 비밀번호 변화 체크
+        if (passwordEncoder.matches(request.newPassword(), currentUser.getPassword())) {
+            throw new CustomException(CustomErrorCode.SAME_AS_OLD_PASSWORD);
+        }
+        // 7. 비밀번호 작성
         currentUser.setPassword(passwordEncoder.encode(request.newPassword()));
     }
 
