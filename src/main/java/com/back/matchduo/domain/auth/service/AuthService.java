@@ -55,8 +55,8 @@ public class AuthService {
         User user = userRepository.findByEmail(req.email())
                 .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_EMAIL));
 
-        // 현재 정책: 평문 비교
-        if (!passwordEncoder.matches(req.password(), user.getPassword())) {
+        // 비밀번호 검증 (BCrypt 해시 + 레거시 평문 호환)
+        if (!validatePassword(req.password(), user)) {
             throw new CustomException(CustomErrorCode.WRONG_PASSWORD);
         }
 
@@ -155,5 +155,28 @@ public class AuthService {
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * 비밀번호 검증 (BCrypt 해시 + 레거시 평문 호환)
+     * - BCrypt 해시인 경우: passwordEncoder.matches() 사용
+     * - 레거시 평문인 경우: 직접 비교 후 BCrypt로 마이그레이션
+     */
+    private boolean validatePassword(String rawPassword, User user) {
+        String storedPassword = user.getPassword();
+
+        // BCrypt 해시 여부 확인 ($2a$, $2b$, $2y$로 시작)
+        if (storedPassword.startsWith("$2")) {
+            return passwordEncoder.matches(rawPassword, storedPassword);
+        }
+
+        // 레거시 평문 비밀번호 처리
+        if (storedPassword.equals(rawPassword)) {
+            // 로그인 성공 시 BCrypt로 마이그레이션
+            user.setPassword(passwordEncoder.encode(rawPassword));
+            return true;
+        }
+
+        return false;
     }
 }
