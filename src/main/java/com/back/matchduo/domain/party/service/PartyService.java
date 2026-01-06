@@ -209,6 +209,11 @@ public class PartyService {
             PartyStatus prevStatus = party.getStatus();
             party.downgradeToRecruit();
 
+            Post post = postRepository.findById(party.getPostId())
+                    .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
+
+            post.updateStatus(PostStatus.RECRUIT);
+
             eventPublisher.publishEvent(new PartyStatusChangedEvent(
                     party.getId(), prevStatus, party.getStatus()
             ));
