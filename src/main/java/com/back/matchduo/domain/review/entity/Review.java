@@ -9,6 +9,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
@@ -43,9 +45,9 @@ public class Review extends SoftDeletableEntity {
     @JoinColumn(name = "reviewee_id", nullable = false)
     private User reviewee;
 
-    // 요청 데이터가 삭제돼도 리뷰는 남아야 하므로 nullable = true
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "review_request_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private ReviewRequest reviewRequest;
 
     @Enumerated(EnumType.STRING)
