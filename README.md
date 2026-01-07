@@ -4,6 +4,8 @@
 
 게임 플레이어들이 쉽고 빠르게 듀오/파티를 찾을 수 있는 웹 플랫폼입니다.
 
+🔗 **[서비스 바로가기](https://matchmyduo.shop/)** | 📄 **[API 문서](https://api.matchmyduo.shop/swagger-ui/index.html)**
+
 <br/>
 
 ## ✨ 핵심 기능
@@ -102,9 +104,8 @@ docker-compose up -d
 ```
 
 ### 5. API 문서 확인
-```
-http://localhost:8080/swagger-ui/index.html
-```
+- 로컬: `http://localhost:8080/swagger-ui/index.html`
+- 배포: https://api.matchmyduo.shop/swagger-ui/index.html
 
 <br/>
 
