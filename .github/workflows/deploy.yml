@@ -129,6 +129,8 @@ jobs:
               --name "app_$NEXT_PORT" \
               -p "$NEXT_PORT":8080 \
               -v /home/ubuntu/application-secret.yml:/app/application-secret.yml \
+              -e AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY_ID }} \
+              -e AWS_SECRET_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
               -e SPRING_PROFILES_ACTIVE=prod \
               "$IMAGE" || { echo "❌ 컨테이너 실행 실패"; exit 1; }
 
