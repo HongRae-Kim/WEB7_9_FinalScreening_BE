@@ -1,113 +1,189 @@
-deploy:
-  runs-on: ubuntu-latest
-  needs: [buildImageAndPush]
-  steps:
-    - uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-region: ${{ secrets.AWS_REGION }}
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+name: deploy
+env:
+  IMAGE_NAME: matchmyduo
 
-    - name: 인스턴스 ID 가져오기
-      id: get_instance_id
-      run: |
-        INSTANCE_ID=$(aws ec2 describe-instances \
-          --filters "Name=tag:Name,Values=matchmyduo-ec2-1" "Name=instance-state-name,Values=running" \
-          --query "Reservations[].Instances[].InstanceId" \
-          --output text)
-        
-        echo "Found INSTANCE_ID=$INSTANCE_ID"
-        
-        # 방어: 비어있으면 즉시 실패
-        if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
-          echo "INSTANCE_ID is empty. Check tag filter / region / permissions."
-          exit 1
-        fi
-        
-        # ✅ 다음 step에서 쓰기 위한 output
-        echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+on:
+  push:
+    paths:
+      - ".github/workflows/**"
+      - "src/**"
+      - "build.gradle.kts"
+      - "Dockerfile"
+    branches:
+      - main
 
-    - name: AWS SSM Send-Command
-      uses: peterkimzz/aws-ssm-send-command@master
-      id: ssm
-      with:
-        aws-region: ${{ secrets.AWS_REGION }}
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+permissions:
+  contents: write
+  packages: write
 
-        # ✅ env가 아니라 output으로 주입 (가장 안정적)
-        instance-ids: ${{ steps.get_instance_id.outputs.instance_id }}
+jobs:
+  makeTagAndRelease:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.create_tag.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Tag
+        id: create_tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.MY_GHCR_TOKEN }}
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_GHCR_TOKEN }}
+        with:
+          tag_name: ${{ steps.create_tag.outputs.new_tag }}
+          release_name: Release ${{ steps.create_tag.outputs.new_tag }}
+          body: ${{ steps.create_tag.outputs.changelog }}
+          draft: false
+          prerelease: false
 
-        working-directory: /home/ubuntu
-        comment: Deploy
-        command: |
-          # 변수 설정
-          IMAGE="ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest"
-          NETWORK="web7_9_finalscreening_be_default"
-          HEALTH_ENDPOINT="/actuator/health"
-          TIMEOUT=120
-          
-          echo "${{ secrets.MY_GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          docker pull "$IMAGE" || { echo "❌ 이미지 풀 실패"; exit 1; }
-          
-          cat <<'EOF' > /home/ubuntu/application-secret.yml
-          ${{ secrets.APPLICATION_SECRET }}
-          EOF
-          
-          if docker ps --format '{{.Ports}}' | grep -q ':8080->'; then
-            CURRENT_PORT=8080
-            NEXT_PORT=8081
-          else
-            CURRENT_PORT=8081
-            NEXT_PORT=8080
+  buildImageAndPush:
+    name: 도커 이미지 빌드와 푸시
+    needs: makeTagAndRelease
+    runs-on: ubuntu-latest
+    outputs:
+      owner_lc: ${{ steps.export_owner.outputs.owner_lc }}
+      image_name: ${{ steps.export_image.outputs.image_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: application-secret 추가
+        env:
+          ACTIONS_STEP_DEBUG: true
+          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
+        run: echo "$APPLICATION_SECRET" > src/main/resources/application-secret.yml
+      - name: Docker Buildx 설치
+        uses: docker/setup-buildx-action@v2
+      - name: 레지스트리 로그인
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.MY_GHCR_TOKEN }}
+      - name: set lower case owner name
+        id: export_owner
+        run: |
+          OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "owner_lc=$OWNER_LC" >> $GITHUB_OUTPUT
+      - name: export image name
+        id: export_image
+        run: echo "image_name=matchmyduo" >> $GITHUB_OUTPUT
+      - name: 빌드 앤 푸시
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          cache-from: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache
+          cache-to: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache,mode=max
+          tags: |
+            ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:${{ needs.makeTagAndRelease.outputs.tag_name }},
+            ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [buildImageAndPush]
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: 인스턴스 ID 가져오기
+        id: get_instance_id
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=matchmyduo-ec2-1" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text)
+
+          echo "Found INSTANCE_ID=$INSTANCE_ID"
+
+          if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+            echo "INSTANCE_ID is empty. Check tag filter / region / permissions."
+            exit 1
           fi
-          
-          docker rm -f "app_$NEXT_PORT" 2>/dev/null || true
-          docker run -d \
-            --restart always \
-            --network $NETWORK \
-            --name "app_$NEXT_PORT" \
-            -p "$NEXT_PORT":8080 \
-            -v /home/ubuntu/application-secret.yml:/app/application-secret.yml \
-            -e SPRING_PROFILES_ACTIVE=prod \
-            "$IMAGE" || { echo "❌ 컨테이너 실행 실패"; exit 1; }
-          
-          echo ">>> app_$NEXT_PORT 헬스체크 시작..."
-          START_TIME=$(date +%s)
-          while true; do
-            UP=$(curl -s http://localhost:$NEXT_PORT$HEALTH_ENDPOINT | grep 'UP' || true)
-            if [ -n "$UP" ]; then
-              echo "✅ app_$NEXT_PORT 가 준비되었습니다. HAProxy가 곧 트래픽을 전환합니다."
-              sleep 5
-              break
-            fi
-          
-            if [ $(( $(date +%s) - START_TIME )) -ge $TIMEOUT ]; then
-              echo "❌ 헬스체크 타임아웃! 컨테이너 로그를 출력합니다:"
-              docker logs "app_$NEXT_PORT"
-              docker rm -f "app_$NEXT_PORT"
-              exit 1
-            fi
-            sleep 5
-          done
-          
-          if command -v haproxy &> /dev/null; then
-            if [ "$NEXT_PORT" == "8080" ]; then
-              sudo sed -i "s/server app_server_1_1 .*/server app_server_1_1 127.0.0.1:8080 check/g" /etc/haproxy/haproxy.cfg
-              sudo sed -i "s/server app_server_1_2 .*/server app_server_1_2 127.0.0.1:8081 check backup/g" /etc/haproxy/haproxy.cfg
+
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+      - name: AWS SSM Send-Command
+        uses: peterkimzz/aws-ssm-send-command@master
+        id: ssm
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          instance-ids: ${{ steps.get_instance_id.outputs.instance_id }}
+          working-directory: /home/ubuntu
+          comment: Deploy
+          command: |
+            # 변수 설정
+            IMAGE="ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest"
+            NETWORK="web7_9_finalscreening_be_default"
+            HEALTH_ENDPOINT="/actuator/health"
+            TIMEOUT=120
+
+            echo "${{ secrets.MY_GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+            docker pull "$IMAGE" || { echo "❌ 이미지 풀 실패"; exit 1; }
+
+            cat <<'EOF' > /home/ubuntu/application-secret.yml
+            ${{ secrets.APPLICATION_SECRET }}
+            EOF
+
+            if docker ps --format '{{.Ports}}' | grep -q ':8080->'; then
+              CURRENT_PORT=8080
+              NEXT_PORT=8081
             else
-              sudo sed -i "s/server app_server_1_1 .*/server app_server_1_1 127.0.0.1:8080 check backup/g" /etc/haproxy/haproxy.cfg
-              sudo sed -i "s/server app_server_1_2 .*/server app_server_1_2 127.0.0.1:8081 check/g" /etc/haproxy/haproxy.cfg
+              CURRENT_PORT=8081
+              NEXT_PORT=8080
             fi
-          
-            sudo systemctl reload haproxy
-            echo "✅ HAProxy 트래픽 전환 완료: $NEXT_PORT"
-          fi
-          
-          OLD_ID=$(docker ps --format '{{.ID}}\t{{.Ports}}' | awk -v p=":$CURRENT_PORT->" '$0 ~ p {print $1}' | head -n1)
-          if [ -n "$OLD_ID" ]; then
-            docker rm -f "$OLD_ID"
-          fi
-          
-          docker image prune -f
-          echo "🚀 무중단 배포 완료: app_$NEXT_PORT 가 가동 중입니다."
+
+            docker rm -f "app_$NEXT_PORT" 2>/dev/null || true
+            docker run -d \
+              --restart always \
+              --network $NETWORK \
+              --name "app_$NEXT_PORT" \
+              -p "$NEXT_PORT":8080 \
+              -v /home/ubuntu/application-secret.yml:/app/application-secret.yml \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              "$IMAGE" || { echo "❌ 컨테이너 실행 실패"; exit 1; }
+
+            echo ">>> app_$NEXT_PORT 헬스체크 시작..."
+            START_TIME=$(date +%s)
+            while true; do
+              UP=$(curl -s http://localhost:$NEXT_PORT$HEALTH_ENDPOINT | grep 'UP' || true)
+              if [ -n "$UP" ]; then
+                echo "✅ app_$NEXT_PORT 가 준비되었습니다. HAProxy가 곧 트래픽을 전환합니다."
+                sleep 5
+                break
+              fi
+
+              if [ $(( $(date +%s) - START_TIME )) -ge $TIMEOUT ]; then
+                echo "❌ 헬스체크 타임아웃! 컨테이너 로그를 출력합니다:"
+                docker logs "app_$NEXT_PORT"
+                docker rm -f "app_$NEXT_PORT"
+                exit 1
+              fi
+              sleep 5
+            done
+
+            if command -v haproxy &> /dev/null; then
+              if [ "$NEXT_PORT" == "8080" ]; then
+                sudo sed -i "s/server app_server_1_1 .*/server app_server_1_1 127.0.0.1:8080 check/g" /etc/haproxy/haproxy.cfg
+                sudo sed -i "s/server app_server_1_2 .*/server app_server_1_2 127.0.0.1:8081 check backup/g" /etc/haproxy/haproxy.cfg
+              else
+                sudo sed -i "s/server app_server_1_1 .*/server app_server_1_1 127.0.0.1:8080 check backup/g" /etc/haproxy/haproxy.cfg
+                sudo sed -i "s/server app_server_1_2 .*/server app_server_1_2 127.0.0.1:8081 check/g" /etc/haproxy/haproxy.cfg
+              fi
+
+              sudo systemctl reload haproxy
+              echo "✅ HAProxy 트래픽 전환 완료: $NEXT_PORT"
+            fi
+
+            OLD_ID=$(docker ps --format '{{.ID}}\t{{.Ports}}' | awk -v p=":$CURRENT_PORT->" '$0 ~ p {print $1}' | head -n1)
+            if [ -n "$OLD_ID" ]; then
+              docker rm -f "$OLD_ID"
+            fi
+
+            docker image prune -f
+            echo "🚀 무중단 배포 완료: app_$NEXT_PORT 가 가동 중입니다."
