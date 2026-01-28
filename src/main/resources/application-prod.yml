@@ -6,7 +6,7 @@ spring:
       include: secret
   data:
     redis:
-      host: redis_1
+      host: redis
       port: ${REDIS_PORT}
       password: "${REDIS_PW}"
   mail:
@@ -19,7 +19,7 @@ spring:
       mail.smtp.starttls.enable: true
 
   datasource:
-    url: jdbc:mysql://mysql_1:3306/${DB_NAME}
+    url: jdbc:mysql://mysql:3306/${DB_NAME}
     username: teama5
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
