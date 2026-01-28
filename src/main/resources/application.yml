@@ -4,39 +4,31 @@ server:
 spring:
   application:
     name: matchmyduo
+
+  # ✅ active 하드코딩 제거, 기본값만 둠
   profiles:
-    active: dev
+    default: dev
     include: secret
-  datasource:
-    hikari:
-      auto-commit: false
+
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+
+  datasource:
+    hikari:
+      auto-commit: false
+
   jpa:
     open-in-view: false
-    hibernate:
-      ddl-auto: update
+    # ✅ ddl-auto는 dev/prod에서만 설정
+    defer-datasource-initialization: false
     properties:
       hibernate:
+        default_batch_fetch_size: 100
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
-        default_batch_fetch_size: 100
-    defer-datasource-initialization: false
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-        debug: false
 
 springdoc:
   default-produces-media-type: application/json
@@ -46,16 +38,14 @@ logging:
     org.hibernate.orm.jdbc.bind: WARN
     org.hibernate.orm.jdbc.extract: WARN
     org.springframework.transaction.interceptor: INFO
-    com.matchmyduo: INFO
+    com.back: INFO
 
+# ✅ 공통: jwt 설정은 구조만 두고 값은 secret.yml/env에서 받음
 custom:
   jwt:
     secretPattern: ${JWT_SECRET}
-    accessExpireSeconds: 3600
-    refreshExpireSeconds: 604800
-  cookie:
-    secure: false
-    path: /
+    accessExpireSeconds: ${JWT_ACCESS_EXPIRE_SECONDS:3600}
+    refreshExpireSeconds: ${JWT_REFRESH_EXPIRE_SECONDS:604800}
 
 riot:
   api:

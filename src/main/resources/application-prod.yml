@@ -2,13 +2,40 @@ spring:
   config:
     activate:
       on-profile: prod
-    profiles:
-      include: secret
+
+  # (application.yml에서 include: secret 했으면 여기선 생략 가능)
+  # profiles:
+  #   include: secret
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      auto-commit: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        highlight_sql: false
+        use_sql_comments: false
+    show-sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
   data:
     redis:
-      host: redis
-      port: ${REDIS_PORT}
-      password: "${REDIS_PASSWORD}"
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -17,26 +44,6 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
-
-  datasource:
-    url: jdbc:mysql://mysql:3306/${DB_NAME}
-    username: teama5
-    password: ${DB_PASSWORD}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: validate # Flyway가 스키마 관리
-    properties:
-      hibernate:
-        format_sql: false
-        highlight_sql: false
-        use_sql_comments: false
-    show-sql: false
-  flyway:
-    enabled: true
-    baseline-on-migrate: true # 기존 DB에 적용 시 필요
-    locations: classpath:db/migration
 
 logging:
   level:
@@ -47,17 +54,16 @@ logging:
     org.springframework.transaction.interceptor: WARN
 
 custom:
-  base-url: http://localhost:8080 #프로필 이미지 등 서버 접근용 BASE URL
-
+  # ✅ 외부에서 주입하도록 정리 (도메인/URL은 secret.yml에서 관리)
   site:
-    domain: "${custom.prod.domain}"
-    backUrl: "${custom.prod.backUrl}"
-    frontUrl: "${custom.prod.frontUrl}"
+    domain: ${CUSTOM_PROD_DOMAIN}
+    backUrl: ${CUSTOM_PROD_BACKURL}
+    frontUrl: ${CUSTOM_PROD_FRONTURL}
 
   jwt:
     secretPattern: ${JWT_SECRET}
-    accessExpireSeconds: 3600
-    refreshExpireSeconds: 604800
+    accessExpireSeconds: ${JWT_ACCESS_EXPIRE_SECONDS:3600}
+    refreshExpireSeconds: ${JWT_REFRESH_EXPIRE_SECONDS:604800}
 
   cookie:
     secure: true
@@ -67,9 +73,9 @@ custom:
 cloud:
   aws:
     s3:
-      bucket: matchduo-profile
+      bucket: ${AWS_S3_BUCKET:matchduo-profile}
     region:
-      static: ap-northeast-2
+      static: ${AWS_REGION:ap-northeast-2}
     credentials:
       access-key: ${AWS_ACCESS_KEY}
       secret-key: ${AWS_SECRET_KEY}
