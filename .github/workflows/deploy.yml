@@ -113,7 +113,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          instance-ids: ${{ steps.get_instance_id.outputs.instance_id }}
+          instance-ids: ${{ secrets.INSTANCE_ID }}
           working-directory: /home/ubuntu
           comment: Deploy
           command: |
