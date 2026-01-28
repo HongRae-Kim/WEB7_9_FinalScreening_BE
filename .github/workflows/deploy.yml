@@ -113,7 +113,7 @@ jobs:
           command: |
             # 변수 설정
             IMAGE="ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest"
-            NETWORK="common"
+            NETWORK="web7_9_finalscreening_be_default"
             HEALTH_ENDPOINT="/actuator/health"
             TIMEOUT=120
             
@@ -125,68 +125,65 @@ jobs:
             ${{ secrets.APPLICATION_SECRET }}
             EOF
             
-            # 현재 실행 중인 컨테이너 확인
-            if docker ps --format '{{.Names}}' | grep -q "app1_1"; then
-              CURRENT="app1_1"
+            # 현재 실행 중인 포트 확인 (컨테이너 이름 무관)
+            if docker ps --format '{{.Ports}}' | grep -q ':8080->'; then
               CURRENT_PORT=8080
-              NEXT="app1_2"
-              NEXT_PORT=8081 # 헬스체크용 외부포트
+              NEXT_PORT=8081
             else
-              CURRENT="app1_2"
               CURRENT_PORT=8081
-              NEXT="app1_1"
-              NEXT_PORT=8080 # 헬스체크용 외부포트
+              NEXT_PORT=8080
             fi
             
-            # 신규 컨테이너 실행 (app1_1 또는 app1_2 이름 유지)
-            docker stop "$NEXT" 2>/dev/null || true
-            docker rm "$NEXT" 2>/dev/null || true
-            
+            # 신규 컨테이너 실행 (포트 기반 이름)
+            docker rm -f "app_$NEXT_PORT" 2>/dev/null || true
             docker run -d \
               --restart always \
               --network $NETWORK \
-              --name "$NEXT" \
+              --name "app_$NEXT_PORT" \
               -p "$NEXT_PORT":8080 \
               -v /home/ubuntu/application-secret.yml:/app/application-secret.yml \
               -e SPRING_PROFILES_ACTIVE=prod \
               "$IMAGE" || { echo "❌ 컨테이너 실행 실패"; exit 1; }
             
             # 헬스 체크 (중요: HAProxy가 감지할 시간을 줘야 함)
-            echo ">>> $NEXT 헬스체크 시작..."
+            echo ">>> app_$NEXT_PORT 헬스체크 시작..."
             START_TIME=$(date +%s)
             while true; do
               UP=$(curl -s http://localhost:$NEXT_PORT$HEALTH_ENDPOINT | grep 'UP' || true)
               if [ -n "$UP" ]; then
-                echo "✅ $NEXT 가 준비되었습니다. HAProxy가 곧 트래픽을 전환합니다."
+                echo "✅ app_$NEXT_PORT 가 준비되었습니다. HAProxy가 곧 트래픽을 전환합니다."
                 sleep 5 # HAProxy가 헬스체크로 UP을 확인할 수 있도록 잠시 대기
                 break
               fi
             
               if [ $(( $(date +%s) - START_TIME )) -ge $TIMEOUT ]; then
                 echo "❌ 헬스체크 타임아웃! 컨테이너 로그를 출력합니다:"
-                docker logs "$NEXT"  # 실패 원인을 알기 위해 로그 출력 추가
-                docker stop "$NEXT" && docker rm "$NEXT"
+                docker logs "app_$NEXT_PORT"
+                docker rm -f "app_$NEXT_PORT"
                 exit 1
               fi
               sleep 5
             done
             
-            # 설정 파일 내의 포트 번호를 동적으로 변경하고 리로드합니다.
+            # HAProxy 스위칭 (backup 플래그 반대로)
             if command -v haproxy &> /dev/null; then
               if [ "$NEXT_PORT" == "8080" ]; then
-                # app1_1(8080)을 살릴 때: 1_1은 8080으로, 1_2는 대기상태나 기존포트 유지 (여기서는 8080만 활성화)
                 sudo sed -i "s/server app_server_1_1 .*/server app_server_1_1 127.0.0.1:8080 check/g" /etc/haproxy/haproxy.cfg
-              elif [ "$NEXT_PORT" == "8081" ]; then
-              # app1_2(8081)를 살릴 때
-              sudo sed -i "s/server app_server_1_2 .*/server app_server_1_2 127.0.0.1:8081 check/g" /etc/haproxy/haproxy.cfg
+                sudo sed -i "s/server app_server_1_2 .*/server app_server_1_2 127.0.0.1:8081 check backup/g" /etc/haproxy/haproxy.cfg
+              else
+                sudo sed -i "s/server app_server_1_1 .*/server app_server_1_1 127.0.0.1:8080 check backup/g" /etc/haproxy/haproxy.cfg
+                sudo sed -i "s/server app_server_1_2 .*/server app_server_1_2 127.0.0.1:8081 check/g" /etc/haproxy/haproxy.cfg
               fi
-              
+            
               sudo systemctl reload haproxy
-              echo "✅ HAProxy 설정 복구 및 트래픽 전환 완료: $NEXT_PORT"
+              echo "✅ HAProxy 트래픽 전환 완료: $NEXT_PORT"
             fi
             
-            # HAProxy가 NEXT를 잡은 후 CURRENT를 꺼야 끊김이 없습니다.
-            docker stop "$CURRENT" 2>/dev/null || true
-            docker rm "$CURRENT" 2>/dev/null || true
+            # HAProxy가 NEXT를 잡은 후 CURRENT 포트 컨테이너 종료
+            OLD_ID=$(docker ps --format '{{.ID}}\t{{.Ports}}' | awk -v p=":$CURRENT_PORT->" '$0 ~ p {print $1}' | head -n1)
+            if [ -n "$OLD_ID" ]; then
+              docker rm -f "$OLD_ID"
+            fi
+            
             docker image prune -f
-            echo "🚀 무중단 배포 완료: $NEXT 가 가동 중입니다."
+            echo "🚀 무중단 배포 완료: app_$NEXT_PORT 가 가동 중입니다."
