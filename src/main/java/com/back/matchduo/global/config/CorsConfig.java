@@ -18,8 +18,7 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         configuration.setAllowedOrigins(List.of(
-                "https://matchmyduo.shop",
-                "https://matchmyduo.vercel.app",
+                "https://matchmyduo.cloud",
                 "http://localhost:3000"));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
