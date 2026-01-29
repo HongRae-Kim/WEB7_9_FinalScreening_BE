@@ -35,9 +35,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
-      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+      - SPRING_PROFILES_ACTIVE=prod
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_REGION=ap-northeast-2
     volumes:
       - /home/ubuntu/application-secret.yml:/app/application-secret.yml
     restart: always
@@ -50,9 +51,11 @@ services:
     ports:
       - "8081:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
-      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+      - SPRING_PROFILES_ACTIVE=prod
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_REGION=ap-northeast-2
+      - MANAGEMENT_HEALTH_MAIL_ENABLED=false
     volumes:
       - /home/ubuntu/application-secret.yml:/app/application-secret.yml
     restart: always
