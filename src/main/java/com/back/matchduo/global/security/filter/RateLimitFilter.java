@@ -41,7 +41,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         // 로그인 엔드포인트에만 Rate Limit 적용
-        if ("POST".equalsIgnoreCase(method) && "/api/v1/users/login".equals(path)) {
+        if ("POST".equalsIgnoreCase(method) && "/api/v1/auth/login".equals(path)) {
             String clientIp = getClientIp(request);
             Bucket bucket = buckets.computeIfAbsent(clientIp, this::createLoginBucket);
 
