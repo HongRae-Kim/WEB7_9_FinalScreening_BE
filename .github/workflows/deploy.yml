@@ -83,7 +83,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: [buildImageAndPush]
+    needs: [makeTagAndRelease, buildImageAndPush]
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
