@@ -5,8 +5,7 @@ spring:
   application:
     name: matchmyduo
   profiles:
-    active: dev
-    include: secret
+    active: local
   datasource:
     hikari:
       auto-commit: false
@@ -46,7 +45,7 @@ logging:
     org.hibernate.orm.jdbc.bind: WARN
     org.hibernate.orm.jdbc.extract: WARN
     org.springframework.transaction.interceptor: INFO
-    com.matchmyduo: INFO
+    com.back.matchduo: INFO
 
 custom:
   jwt:
