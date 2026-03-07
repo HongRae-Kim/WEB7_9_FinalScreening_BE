@@ -2,13 +2,11 @@ spring:
   config:
     activate:
       on-profile: prod
-    profiles:
-      include: secret
   data:
     redis:
       host: redis_1
       port: ${REDIS_PORT}
-      password: "${REDIS_PW}"
+      password: ${REDIS_PASSWORD}
   mail:
     host: smtp.gmail.com
     port: 587
@@ -20,7 +18,7 @@ spring:
 
   datasource:
     url: jdbc:mysql://mysql_1:3306/${DB_NAME}
-    username: teama5
+    username: teamA5
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
@@ -47,12 +45,12 @@ logging:
     org.springframework.transaction.interceptor: WARN
 
 custom:
-  base-url: http://localhost:8080 #프로필 이미지 등 서버 접근용 BASE URL
+  base-url: ${CUSTOM_PROD_BACK_URL}
 
   site:
-    domain: "${custom.prod.domain}"
-    backUrl: "${custom.prod.backUrl}"
-    frontUrl: "${custom.prod.frontUrl}"
+    domain: ${CUSTOM_PROD_DOMAIN}
+    backUrl: ${CUSTOM_PROD_BACK_URL}
+    frontUrl: ${CUSTOM_PROD_FRONT_URL}
 
   jwt:
     secretPattern: ${JWT_SECRET}

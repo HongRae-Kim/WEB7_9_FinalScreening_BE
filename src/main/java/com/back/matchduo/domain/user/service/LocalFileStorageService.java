@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 @Service
-@Profile({"dev", "test"})
+@Profile({"local", "test"})
 public class LocalFileStorageService implements FileStorageService {
 
     private static final Path UPLOAD_DIR =
