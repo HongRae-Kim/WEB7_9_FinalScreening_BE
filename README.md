@@ -6,6 +6,8 @@
 
 🔗 **[서비스 바로가기](https://matchmyduo.shop/)** | 📄 **[API 문서](https://api.matchmyduo.shop/swagger-ui/index.html)**
 
+> 현재 프로젝트를 개인 포크 환경에서 이어서 개선하고 있습니다.
+
 <br/>
 
 ## ✨ 핵심 기능
@@ -80,7 +82,7 @@ DB_PASSWORD=your_password
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PW=your_redis_password
+REDIS_PASSWORD=your_redis_password
 
 # JWT
 JWT_SECRET=your_jwt_secret_key
@@ -93,9 +95,11 @@ MAIL_PASSWORD=your_app_password
 RIOT_API_KEY=your_riot_api_key
 ```
 
+기본 실행 프로필은 `local`입니다.
+
 ### 3. Docker로 MySQL & Redis 실행
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 4. 애플리케이션 실행

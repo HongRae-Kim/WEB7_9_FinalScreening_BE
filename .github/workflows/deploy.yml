@@ -50,11 +50,6 @@ jobs:
       image_name: ${{ steps.export_image.outputs.image_name }}
     steps:
       - uses: actions/checkout@v4
-      - name: application-secret 추가
-        env:
-          ACTIONS_STEP_DEBUG: true
-          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
-        run: echo "$APPLICATION_SECRET" > src/main/resources/application-secret.yml
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v2
       - name: 레지스트리 로그인
@@ -121,10 +116,6 @@ jobs:
             echo "${{ secrets.MY_GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
             docker pull "$IMAGE" || { echo "❌ 이미지 풀 실패"; exit 1; }
             
-            cat <<'EOF' > /home/ubuntu/application-secret.yml
-            ${{ secrets.APPLICATION_SECRET }}
-            EOF
-            
             # 현재 실행 중인 컨테이너 확인
             if docker ps --format '{{.Names}}' | grep -q "app1_1"; then
               CURRENT="app1_1"
@@ -147,7 +138,6 @@ jobs:
               --network $NETWORK \
               --name "$NEXT" \
               -p "$NEXT_PORT":8080 \
-              -v /home/ubuntu/application-secret.yml:/app/application-secret.yml \
               -e SPRING_PROFILES_ACTIVE=prod \
               "$IMAGE" || { echo "❌ 컨테이너 실행 실패"; exit 1; }
             

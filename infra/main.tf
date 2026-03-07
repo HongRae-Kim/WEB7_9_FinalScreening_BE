@@ -12,7 +12,7 @@ provider "aws" {
   region = var.region
   default_tags {
     tags = {
-      Team = "devcos-teama5"
+      Team = "devcos-teamA5"
     }
   }
 }
@@ -242,7 +242,6 @@ docker run -d \
   -e MYSQL_ROOT_PASSWORD=${var.mysql_password} \
   -e MYSQL_DATABASE=matchduo_db \
   -e TZ=Asia/Seoul \
-  mysql:latest
   mysql:8.0 \
   --default-authentication-plugin=mysql_native_password \
   --character-set-server=utf8mb4 \
@@ -258,13 +257,13 @@ echo "MySQL이 준비됨. 초기화 스크립트 실행 중..."
 
 # DB 초기화 및 사용자 생성
 docker exec mysql_1 mysql -uroot -p${var.mysql_password} -e "
-CREATE USER 'teama5'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '${var.mysql_password}';
-CREATE USER 'teama5'@'172.18.%.%' IDENTIFIED WITH caching_sha2_password BY '${var.mysql_password}';
-CREATE USER 'teama5'@'%' IDENTIFIED WITH caching_sha2_password BY '${var.mysql_password}';
+CREATE USER 'teamA5'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '${var.mysql_password}';
+CREATE USER 'teamA5'@'172.18.%.%' IDENTIFIED WITH caching_sha2_password BY '${var.mysql_password}';
+CREATE USER 'teamA5'@'%' IDENTIFIED WITH caching_sha2_password BY '${var.mysql_password}';
 
-GRANT ALL PRIVILEGES ON *.* TO 'teama5'@'127.0.0.1';
-GRANT ALL PRIVILEGES ON *.* TO 'teama5'@'172.18.%.%';
-GRANT ALL PRIVILEGES ON *.* TO 'teama5'@'%';
+GRANT ALL PRIVILEGES ON *.* TO 'teamA5'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON *.* TO 'teamA5'@'172.18.%.%';
+GRANT ALL PRIVILEGES ON *.* TO 'teamA5'@'%';
 
 CREATE DATABASE IF NOT EXISTS matchduo_db;
 
