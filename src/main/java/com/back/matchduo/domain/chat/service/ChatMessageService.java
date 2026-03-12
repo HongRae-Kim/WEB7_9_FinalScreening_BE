@@ -131,8 +131,18 @@ public class ChatMessageService {
         readState.markReadUpTo(message);
         ChatMessageRead saved = chatMessageReadRepository.save(readState);
 
-        // Redis: 내 unreadCount 초기화
-        chatUnreadCacheService.reset(chatRoomId, requesterId);
+        Long lastReadId = saved.getLastReadMessage() != null
+                ? saved.getLastReadMessage().getId()
+                : 0L;
+
+        long unreadCount = chatMessageRepository.countUnread(
+                room.getId(),
+                room.getCurrentSessionNo(),
+                lastReadId,
+                requesterId
+        );
+
+        chatUnreadCacheService.setCount(chatRoomId, requesterId, unreadCount);
 
         return saved;
     }

@@ -1,7 +1,22 @@
 package com.back.matchduo.domain.chat.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.back.matchduo.domain.chat.dto.internal.ChatMessagesWithRoom;
 import com.back.matchduo.domain.chat.dto.internal.ChatRoomDetailWithGameAccount;
+import com.back.matchduo.domain.chat.dto.response.ChatRoomSummaryResponse;
 import com.back.matchduo.domain.chat.entity.ChatMessage;
 import com.back.matchduo.domain.chat.entity.ChatMessageRead;
 import com.back.matchduo.domain.chat.entity.ChatRoom;
@@ -16,17 +31,6 @@ import com.back.matchduo.domain.post.repository.PostRepository;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
 import com.back.matchduo.global.exeption.CustomException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -239,6 +243,59 @@ class ChatServiceTest {
 
             // then
             assertThat(readState.getLastReadMessage().getId()).isEqualTo(message.getId());
+        }
+
+        @Test
+        @DisplayName("중간 메시지까지 읽으면 unreadCount는 남은 메시지 수를 유지한다")
+        void markReadUpTo_partial_read_keeps_remaining_unread_count() {
+            // given
+            chatMessageService.send(chatRoom.getId(), applicant.getId(), MessageType.TEXT, "메시지1");
+            ChatMessage secondMessage = chatMessageService.send(chatRoom.getId(), applicant.getId(), MessageType.TEXT,"메시지2");
+            chatMessageService.send(chatRoom.getId(), applicant.getId(), MessageType.TEXT, "메시지3");
+
+            // when
+            chatMessageService.markReadUpTo(chatRoom.getId(), postAuthor.getId(), secondMessage.getId());
+            List<ChatRoomSummaryResponse> summaries = chatRoomService.getMyRoomsWithSummary(postAuthor.getId(), null, 10);
+
+            // then
+            assertThat(summaries).hasSize(1);
+            assertThat(summaries.get(0).unreadCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("마지막 메시지까지 읽으면 unreadCount는 0이 된다")
+        void markReadUpTo_last_message_sets_unread_zero() {
+            // given
+            chatMessageService.send(chatRoom.getId(), applicant.getId(), MessageType.TEXT, "메시지1");
+            chatMessageService.send(chatRoom.getId(), applicant.getId(), MessageType.TEXT, "메시지2");
+            ChatMessage lastMessage = chatMessageService.send(chatRoom.getId(), applicant.getId(), MessageType.TEXT, "메시지3");
+
+            // when
+            chatMessageService.markReadUpTo(chatRoom.getId(), postAuthor.getId(), lastMessage.getId());
+            List<ChatRoomSummaryResponse> summaries = chatRoomService.getMyRoomsWithSummary(postAuthor.getId(), null, 10);
+
+            // then
+            assertThat(summaries).hasSize(1);
+            assertThat(summaries.get(0).unreadCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("이미 뒤의 메시지를 읽은 상태에서 앞 메시지를 읽어도 unreadCount는 유지된다")
+        void markReadUpTo_previous_message_does_not_increase_unread() {
+            // given
+            ChatMessage firstMessage = chatMessageService.send(chatRoom.getId(), applicant.getId(), MessageType.TEXT, "메시지1");
+            chatMessageService.send(chatRoom.getId(), applicant.getId(), MessageType.TEXT, "메시지2");
+            ChatMessage lastMessage = chatMessageService.send(chatRoom.getId(), applicant.getId(), MessageType.TEXT, "메시지3");
+
+            // when
+            chatMessageService.markReadUpTo(chatRoom.getId(), postAuthor.getId(), lastMessage.getId());
+            chatMessageService.markReadUpTo(chatRoom.getId(), postAuthor.getId(), firstMessage.getId());
+
+            List<ChatRoomSummaryResponse> summaries = chatRoomService.getMyRoomsWithSummary(postAuthor.getId(), null, 10);
+
+            // then
+            assertThat(summaries).hasSize(1);
+            assertThat(summaries.get(0).unreadCount()).isZero();
         }
     }
 }

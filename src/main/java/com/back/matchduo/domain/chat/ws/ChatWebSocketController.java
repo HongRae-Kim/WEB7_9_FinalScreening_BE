@@ -6,6 +6,7 @@ import com.back.matchduo.domain.chat.entity.ChatMessage;
 import com.back.matchduo.domain.chat.service.ChatMessageService;
 import com.back.matchduo.global.exeption.CustomErrorCode;
 import com.back.matchduo.global.exeption.CustomException;
+import com.back.matchduo.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -54,12 +55,18 @@ public class ChatWebSocketController {
     }
 
     private Long extractUserId(Principal principal) {
-        if (principal == null) {
+        if (!(principal instanceof Authentication auth) || auth.getPrincipal() == null) {
             throw new CustomException(CustomErrorCode.UNAUTHORIZED_USER);
         }
 
-        if (principal instanceof Authentication auth) {
-            return (Long) auth.getPrincipal();
+        Object principalObj = auth.getPrincipal();
+
+        if (principalObj instanceof Long userId) {
+            return userId;
+        }
+
+        if (principalObj instanceof CustomUserDetails userDetails) {
+            return userDetails.getId();
         }
 
         throw new CustomException(CustomErrorCode.UNAUTHORIZED_USER);

@@ -1,12 +1,13 @@
 package com.back.matchduo.domain.chat.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.Duration;
+import java.util.function.Supplier;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -36,13 +37,7 @@ public class ChatUnreadCacheService {
 
     /** 읽음 처리 시 unread = 0 **/
     public void reset(Long chatRoomId, Long userId) {
-        try {
-            String key = buildKey(chatRoomId, userId);
-            redisTemplate.opsForValue().set(key, 0L, TTL);
-            log.debug("Redis unread 초기화: key={}", key);
-        } catch (Exception e) {
-            log.warn("Redis reset 실패: {}", e.getMessage());
-        }
+        setCount(chatRoomId, userId, 0L);
     }
 
     /** 조회: Redis 없으면 DB fallback **/
@@ -83,6 +78,15 @@ public class ChatUnreadCacheService {
             }
         } catch (Exception e) {
             log.warn("Redis deleteByChatRoomId 실패: {}", e.getMessage());
+        }
+    }
+
+    public void setCount(Long chatRoomId, Long userId, long count) {
+        try {
+            String key = buildKey(chatRoomId, userId);
+            redisTemplate.opsForValue().set(key, count, TTL);
+        } catch (Exception e) {
+            log.warn("Redis setCount 실패: {}", e.getMessage());
         }
     }
 }

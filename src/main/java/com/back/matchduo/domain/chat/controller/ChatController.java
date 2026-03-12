@@ -115,13 +115,18 @@ public class ChatController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long chatRoomId,
             @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "30") int size) {
+            @RequestParam(defaultValue = "30") int size,
+            @RequestParam(defaultValue = "false") boolean markAsRead) {
 
         Long userId = userDetails.getId();
         int pageSize = Math.min(Math.max(size, 1), 100);
 
         ChatMessagesWithRoom result =
                 chatMessageService.getMessagesWithRoom(chatRoomId, userId, cursor, pageSize + 1);
+
+        if (markAsRead && cursor == null && !result.messages().isEmpty()) {
+            chatMessageService.markReadUpTo(chatRoomId, userId, result.messages().get(0).getId());
+        }
 
         List<ChatMessage> messages = result.messages();
         boolean hasNext = messages.size() > pageSize;

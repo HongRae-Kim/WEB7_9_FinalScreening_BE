@@ -26,11 +26,15 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     /** 안 읽은 메시지 수 */
     @Query("SELECT COUNT(m) FROM ChatMessage m " +
-           "WHERE m.chatRoom.id = :roomId AND m.sessionNo = :sessionNo AND m.id > :lastReadId")
+           "WHERE m.chatRoom.id = :roomId " +
+           "AND m.sessionNo = :sessionNo " +
+           "AND m.id > :lastReadId " +
+           "AND m.sender.id <> :userId")
     long countUnread(
             @Param("roomId") Long roomId,
             @Param("sessionNo") Integer sessionNo,
-            @Param("lastReadId") Long lastReadId);
+            @Param("lastReadId") Long lastReadId,
+            @Param("userId") Long userId);
 
     /** 채팅방의 마지막 메시지 조회 (현재 세션) */
     Optional<ChatMessage> findFirstByChatRoomIdAndSessionNoOrderByIdDesc(Long roomId, Integer sessionNo);
@@ -57,4 +61,16 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Query("DELETE FROM ChatMessage m WHERE m.sender.id = :userId")
     void deleteBySenderId(@Param("userId") Long userId);
 
+    @Query("SELECT m FROM ChatMessage m " +
+            "JOIN FETCH m.sender " +
+            "JOIN m.chatRoom r " +
+            "WHERE r.id IN :roomIds " +
+            "AND m.sessionNo = r.currentSessionNo " +
+            "AND m.id = (" +
+            "  SELECT MAX(m2.id) FROM ChatMessage m2 " +
+            "  WHERE m2.chatRoom.id = r.id " +
+            "  AND m2.sessionNo = r.currentSessionNo" +
+            ")")
+    List<ChatMessage> findLastMessagesByRoomIdsAndCurrentSession(
+            @Param("roomIds") List<Long> roomIds);
 }

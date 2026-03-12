@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,4 +44,12 @@ public interface ChatMessageReadRepository extends JpaRepository<ChatMessageRead
     @Modifying
     @Query("DELETE FROM ChatMessageRead r WHERE r.chatRoom.id IN :roomIds")
     void deleteByRoomIds(@Param("roomIds") List<Long> roomIds);
+
+    @Modifying
+    @Query("UPDATE ChatMessageRead r " +
+            "SET r.lastReadMessage = NULL, r.lastReadAt = NULL " +
+            "WHERE r.lastReadMessage.id IN (" +
+            "  SELECT m.id FROM ChatMessage m WHERE m.createdAt < :threshold" +
+            ")")
+    void clearBrokenLastReadPointers(@Param("threshold") LocalDateTime threshold);
 }

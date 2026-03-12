@@ -60,6 +60,8 @@ public class ChatScheduler {
     @Transactional
     public void cleanupOldMessages() {
         LocalDateTime threshold = LocalDateTime.now().minusDays(7);
+
+        chatMessageReadRepository.clearBrokenLastReadPointers(threshold);
         int deletedCount = chatMessageRepository.deleteOldMessages(threshold);
 
         log.info("7일 이상 된 메시지 {}개 정리 완료", deletedCount);

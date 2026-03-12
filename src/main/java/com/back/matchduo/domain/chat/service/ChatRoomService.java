@@ -158,14 +158,11 @@ public class ChatRoomService {
 
         // 마지막 메시지 배치 조회
         Map<Long, ChatMessage> lastMessageMap = chatMessageRepository
-                .findRecentByRoomIds(roomIds)
+                .findLastMessagesByRoomIdsAndCurrentSession(roomIds)
                 .stream()
-                .filter(msg -> msg.getSessionNo().equals(
-                        msg.getChatRoom().getCurrentSessionNo()))
                 .collect(Collectors.toMap(
                         msg -> msg.getChatRoom().getId(),
-                        msg -> msg,
-                        (first, second) -> first
+                        msg -> msg
                 ));
 
         // 읽음 상태 배치 조회 (Fallback용)
@@ -195,7 +192,10 @@ public class ChatRoomService {
                                         ? readState.getLastReadMessage().getId()
                                         : 0L;
                                 return chatMessageRepository.countUnread(
-                                        room.getId(), room.getCurrentSessionNo(), lastReadId);
+                                        room.getId(),
+                                        room.getCurrentSessionNo(),
+                                        lastReadId,
+                                        userId);
                             }
                     );
 

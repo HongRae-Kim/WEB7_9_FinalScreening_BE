@@ -166,6 +166,26 @@ class ChatUnreadCacheServiceTest {
     }
 
     @Nested
+    @DisplayName("setCount 메서드")
+    class SetCountTest {
+
+        @BeforeEach
+        void setUp() {
+            given(redisTemplate.opsForValue()).willReturn(valueOperations);
+        }
+
+        @Test
+        @DisplayName("계산된 unreadCount를 캐시에 저장한다")
+        void setCount_success() {
+            // when
+            chatUnreadCacheService.setCount(CHAT_ROOM_ID, USER_ID, 2L);
+
+            // then
+            verify(valueOperations).set(eq(EXPECTED_KEY), eq(2L), any(Duration.class));
+        }
+    }
+
+    @Nested
     @DisplayName("delete 메서드")
     class DeleteTest {
 

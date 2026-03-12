@@ -79,7 +79,11 @@ public class ChatMessageRead {
         validateMessage(message);
         validateSameRoom(message);
 
-        if (!isCurrentSession(message) || isAlreadyRead(message)) {
+        if (!isCurrentSession(message)) {
+            return;
+        }
+
+        if (isAlreadyRead(message)) {
             return;
         }
 
