@@ -138,6 +138,7 @@ jobs:
               --network $NETWORK \
               --name "$NEXT" \
               -p "$NEXT_PORT":8080 \
+              --env-file /home/ubuntu/matchmyduo/.env \
               -e SPRING_PROFILES_ACTIVE=prod \
               "$IMAGE" || { echo "❌ 컨테이너 실행 실패"; exit 1; }
             
