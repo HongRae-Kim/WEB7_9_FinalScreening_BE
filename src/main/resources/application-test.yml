@@ -1,11 +1,13 @@
 spring:
+  config:
+    activate:
+      on-profile: test
+
   datasource:
     url: jdbc:mysql://localhost:3306/${DB_NAME}
-    driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USER}
     password: ${DB_PASSWORD}
-    hikari:
-      auto-commit: false
+
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
@@ -15,26 +17,24 @@ spring:
         format_sql: true
         highlight_sql: false
         use_sql_comments: true
+
   flyway:
     enabled: false
+
   data:
     redis:
       host: localhost
       port: 6379
       password: ${REDIS_PASSWORD}
+
   mail:
     host: test
-    port: 01010
+    port: 1010
 
 custom:
-  jwt:
-    secretPattern: ${JWT_SECRET}
-    accessExpireSeconds: 3600
-    refreshExpireSeconds: 604800
   cookie:
     secure: false
     sameSite: Lax
-    path: /
 
 riot:
   api:
