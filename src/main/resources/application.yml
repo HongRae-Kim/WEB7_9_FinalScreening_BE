@@ -5,25 +5,26 @@ spring:
   application:
     name: matchmyduo
   profiles:
-    active: local
+    active: dev
+    include: secret
+
   datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       auto-commit: false
+
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+
   jpa:
     open-in-view: false
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
-        format_sql: true
-        highlight_sql: true
-        use_sql_comments: true
         default_batch_fetch_size: 100
     defer-datasource-initialization: false
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -35,7 +36,6 @@ spring:
           auth: true
           starttls:
             enable: true
-        debug: true
 
 springdoc:
   default-produces-media-type: application/json
@@ -53,10 +53,21 @@ custom:
     accessExpireSeconds: 3600
     refreshExpireSeconds: 604800
   cookie:
-    secure: false
     path: /
 
 riot:
   api:
     base-url: ${RIOT_API_BASE_URL:https://asia.api.riotgames.com}
     key: ${RIOT_API_KEY:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: matchmyduo
