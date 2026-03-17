@@ -8,22 +8,12 @@ import com.back.matchduo.domain.party.repository.PartyMemberRepository;
 import com.back.matchduo.domain.party.repository.PartyRepository;
 import com.back.matchduo.domain.post.repository.PostRepository;
 import com.back.matchduo.domain.review.repository.ReviewRepository;
-import com.back.matchduo.domain.user.dto.request.UserLoginRequest;
-import com.back.matchduo.domain.user.dto.response.UserLoginResponse;
-import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
-import com.back.matchduo.global.exeption.CustomErrorCode;
-import com.back.matchduo.global.exeption.CustomException;
 import com.back.matchduo.global.security.cookie.AuthCookieProvider;
-import com.back.matchduo.global.security.jwt.JwtProvider;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Arrays;
 
 @Service
 @Transactional

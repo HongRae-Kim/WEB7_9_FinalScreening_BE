@@ -6,8 +6,8 @@ import com.back.matchduo.domain.post.entity.Position;
 import com.back.matchduo.domain.post.entity.Post;
 import com.back.matchduo.domain.post.entity.PostStatus;
 import com.back.matchduo.domain.post.entity.QueueType;
-import com.back.matchduo.global.exeption.CustomErrorCode;
-import com.back.matchduo.global.exeption.CustomException;
+import com.back.matchduo.global.exception.CustomErrorCode;
+import com.back.matchduo.global.exception.CustomException;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;

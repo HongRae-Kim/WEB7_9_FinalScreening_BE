@@ -2,8 +2,8 @@ package com.back.matchduo.domain.chat.entity;
 
 import com.back.matchduo.domain.post.entity.Post;
 import com.back.matchduo.domain.user.entity.User;
-import com.back.matchduo.global.exeption.CustomErrorCode;
-import com.back.matchduo.global.exeption.CustomException;
+import com.back.matchduo.global.exception.CustomErrorCode;
+import com.back.matchduo.global.exception.CustomException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
