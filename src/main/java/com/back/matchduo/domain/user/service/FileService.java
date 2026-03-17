@@ -1,7 +1,7 @@
 package com.back.matchduo.domain.user.service;
 
-import com.back.matchduo.global.exeption.CustomErrorCode;
-import com.back.matchduo.global.exeption.CustomException;
+import com.back.matchduo.global.exception.CustomErrorCode;
+import com.back.matchduo.global.exception.CustomException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

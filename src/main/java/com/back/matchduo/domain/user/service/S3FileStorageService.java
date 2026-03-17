@@ -2,8 +2,8 @@ package com.back.matchduo.domain.user.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.back.matchduo.global.exeption.CustomErrorCode;
-import com.back.matchduo.global.exeption.CustomException;
+import com.back.matchduo.global.exception.CustomErrorCode;
+import com.back.matchduo.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;

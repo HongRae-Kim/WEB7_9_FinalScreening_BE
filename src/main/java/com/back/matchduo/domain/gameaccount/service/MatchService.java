@@ -13,8 +13,8 @@ import com.back.matchduo.domain.gameaccount.repository.FavoriteChampionRepositor
 import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
 import com.back.matchduo.domain.gameaccount.repository.MatchParticipantRepository;
 import com.back.matchduo.domain.gameaccount.repository.MatchRepository;
-import com.back.matchduo.global.exeption.CustomErrorCode;
-import com.back.matchduo.global.exeption.CustomException;
+import com.back.matchduo.global.exception.CustomErrorCode;
+import com.back.matchduo.global.exception.CustomException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

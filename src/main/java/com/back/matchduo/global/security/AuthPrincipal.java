@@ -1,7 +1,7 @@
 package com.back.matchduo.global.security;
 
-import com.back.matchduo.global.exeption.CustomErrorCode;
-import com.back.matchduo.global.exeption.CustomException;
+import com.back.matchduo.global.exception.CustomErrorCode;
+import com.back.matchduo.global.exception.CustomException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 

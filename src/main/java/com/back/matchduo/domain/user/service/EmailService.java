@@ -2,8 +2,8 @@ package com.back.matchduo.domain.user.service;
 
 import com.back.matchduo.domain.user.entity.Verification;
 import com.back.matchduo.domain.user.repository.VerificationRepository;
-import com.back.matchduo.global.exeption.CustomErrorCode;
-import com.back.matchduo.global.exeption.CustomException;
+import com.back.matchduo.global.exception.CustomErrorCode;
+import com.back.matchduo.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;

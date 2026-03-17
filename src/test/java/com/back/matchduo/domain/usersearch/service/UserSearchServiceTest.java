@@ -5,7 +5,7 @@ import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
 import com.back.matchduo.domain.usersearch.dto.response.UserSearchListResponse;
-import com.back.matchduo.global.exeption.CustomException;
+import com.back.matchduo.global.exception.CustomException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,4 +1,4 @@
-package com.back.matchduo.global.exeption;
+package com.back.matchduo.global.exception;
 
 import lombok.Getter;
 

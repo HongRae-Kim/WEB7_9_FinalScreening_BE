@@ -1,4 +1,4 @@
-package com.back.matchduo.global.exeption;
+package com.back.matchduo.global.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
