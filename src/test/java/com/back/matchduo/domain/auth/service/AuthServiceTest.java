@@ -2,7 +2,7 @@ package com.back.matchduo.domain.auth.service;
 
 import com.back.matchduo.domain.auth.dto.request.LoginRequest;
 import com.back.matchduo.domain.auth.dto.response.LoginResponse;
-import com.back.matchduo.domain.auth.refresh.repository.RefreshTokenRepository;
+import com.back.matchduo.domain.auth.refresh.service.RefreshTokenStore;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
 import com.back.matchduo.global.config.JwtProperties;
@@ -40,7 +40,7 @@ class AuthServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private RefreshTokenRepository refreshTokenRepository;
+    private RefreshTokenStore refreshTokenStore;
 
     @Mock
     private JwtProvider jwtProvider;
@@ -100,8 +100,6 @@ class AuthServiceTest {
                     .willReturn(ResponseCookie.from("accessToken", "access-token").build());
             given(cookieProvider.createRefreshTokenCookie(any(), anyLong()))
                     .willReturn(ResponseCookie.from("refreshToken", "refresh-token").build());
-            given(refreshTokenRepository.findByUserId(1L)).willReturn(Optional.empty());
-            given(refreshTokenRepository.save(any())).willReturn(null);
 
             // when
             LoginResponse result = authService.login(request, response);
@@ -189,8 +187,6 @@ class AuthServiceTest {
                     .willReturn(ResponseCookie.from("accessToken", "access-token").build());
             given(cookieProvider.createRefreshTokenCookie(any(), anyLong()))
                     .willReturn(ResponseCookie.from("refreshToken", "refresh-token").build());
-            given(refreshTokenRepository.findByUserId(2L)).willReturn(Optional.empty());
-            given(refreshTokenRepository.save(any())).willReturn(null);
 
             // when
             LoginResponse result = authService.login(request, response);
@@ -275,8 +271,6 @@ class AuthServiceTest {
                     .willReturn(ResponseCookie.from("accessToken", "access-token").build());
             given(cookieProvider.createRefreshTokenCookie(any(), anyLong()))
                     .willReturn(ResponseCookie.from("refreshToken", "refresh-token").build());
-            given(refreshTokenRepository.findByUserId(3L)).willReturn(Optional.empty());
-            given(refreshTokenRepository.save(any())).willReturn(null);
 
             // when
             LoginResponse result = authService.login(request, response);
