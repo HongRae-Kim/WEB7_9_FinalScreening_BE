@@ -50,7 +50,7 @@
 
 ### 1. 인증 로직 개선
 - 기존 DB upsert 방식의 refresh token을 Redis에 저장하는 방식으로 변경, DB write 비용 제거
-- `upsertRefreshToken`: 2~5ms → 0.003~0.016ms
+- `upsertRefreshToken`: 2~5ms → 0.003 ~ 0.016ms
 
 ### 2. 파티 초대 쓰기 로직 개선
 - `party_add_members`에서 대상 유저별 개별 조회/저장 → 배치 조회 + `saveAll()` 구조로 변경
