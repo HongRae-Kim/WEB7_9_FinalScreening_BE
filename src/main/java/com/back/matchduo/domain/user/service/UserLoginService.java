@@ -1,6 +1,6 @@
 package com.back.matchduo.domain.user.service;
 
-import com.back.matchduo.domain.auth.refresh.repository.RefreshTokenRepository;
+import com.back.matchduo.domain.auth.refresh.service.RefreshTokenStore;
 import com.back.matchduo.domain.chat.repository.ChatMessageRepository;
 import com.back.matchduo.domain.chat.repository.ChatRoomRepository;
 import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserLoginService {
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenStore refreshTokenStore;
     private final AuthCookieProvider cookieProvider;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -55,7 +55,7 @@ public class UserLoginService {
         gameAccountRepository.deleteAllByUser_Id(userId);
 
         // 8. DB에서 해당 유저의 리프레시 토큰 삭제 (로그아웃 로직과 동일)
-        refreshTokenRepository.deleteByUserId(userId);
+        refreshTokenStore.deleteByUserId(userId);
 
         // 9. DB에서 유저 엔티티 삭제
         userRepository.deleteById(userId);

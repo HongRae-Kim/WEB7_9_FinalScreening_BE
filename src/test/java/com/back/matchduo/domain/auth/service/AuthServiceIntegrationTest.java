@@ -19,9 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import com.back.matchduo.support.InMemoryTestConfig;
+import org.springframework.context.annotation.Import;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(InMemoryTestConfig.class)
 @DisplayName("AuthService 통합 테스트")
 class AuthServiceIntegrationTest {
 

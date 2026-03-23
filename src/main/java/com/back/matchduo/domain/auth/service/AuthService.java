@@ -4,8 +4,7 @@ import com.back.matchduo.domain.auth.dto.request.LoginRequest;
 import com.back.matchduo.domain.auth.dto.response.AuthUserSummary;
 import com.back.matchduo.domain.auth.dto.response.LoginResponse;
 import com.back.matchduo.domain.auth.dto.response.RefreshResponse;
-import com.back.matchduo.domain.auth.refresh.entity.RefreshToken;
-import com.back.matchduo.domain.auth.refresh.repository.RefreshTokenRepository;
+import com.back.matchduo.domain.auth.refresh.service.RefreshTokenStore;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
 import com.back.matchduo.global.config.JwtProperties;
@@ -16,12 +15,14 @@ import com.back.matchduo.global.security.jwt.JwtProvider;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.Arrays;
 
 @Service
@@ -29,22 +30,24 @@ import java.util.Arrays;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenStore refreshTokenStore;
     private final JwtProvider jwtProvider;
     private final JwtProperties jwtProperties;
     private final AuthCookieProvider cookieProvider;
     private final PasswordEncoder passwordEncoder;
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
 
     public AuthService(
             UserRepository userRepository,
-            RefreshTokenRepository refreshTokenRepository,
+            RefreshTokenStore refreshTokenStore,
             JwtProvider jwtProvider,
             JwtProperties jwtProperties,
             AuthCookieProvider cookieProvider,
             PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
-        this.refreshTokenRepository = refreshTokenRepository;
+        this.refreshTokenStore = refreshTokenStore;
         this.jwtProvider = jwtProvider;
         this.jwtProperties = jwtProperties;
         this.cookieProvider = cookieProvider;
@@ -52,21 +55,40 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest req, HttpServletResponse res) {
+        long start = System.nanoTime();
+
+        long t1 = System.nanoTime();
         User user = userRepository.findByEmail(req.email())
                 .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_EMAIL));
+        long t2 = System.nanoTime();
 
         // 비밀번호 검증 (BCrypt 해시 + 레거시 평문 호환)
         if (!validatePassword(req.password(), user)) {
             throw new CustomException(CustomErrorCode.WRONG_PASSWORD);
         }
+        long t3 = System.nanoTime();
 
         String accessToken = jwtProvider.createAccessToken(user.getId());
         String refreshToken = jwtProvider.createRefreshToken(user.getId());
+        long t4 = System.nanoTime();
 
         upsertRefreshToken(user.getId(), refreshToken);
+        long t5 = System.nanoTime();
 
         addSetCookie(res, cookieProvider.createAccessTokenCookie(accessToken, jwtProperties.accessExpireSeconds()));
         addSetCookie(res, cookieProvider.createRefreshTokenCookie(refreshToken, jwtProperties.refreshExpireSeconds()));
+        long t6 = System.nanoTime();
+
+        log.info(
+                "auth_login_timing email={} findByEmail={}ms validatePassword={}ms createTokens={}ms upsertRefreshToken={}ms setCookie={}ms total={}ms",
+                req.email(),
+                (t2 - t1) / 1_000_000.0,
+                (t3 - t2) / 1_000_000.0,
+                (t4 - t3) / 1_000_000.0,
+                (t5 - t4) / 1_000_000.0,
+                (t6 - t5) / 1_000_000.0,
+                (t6 - start) / 1_000_000.0
+        );
 
         return new LoginResponse(
                 new AuthUserSummary(user.getId(), user.getEmail(), user.getNickname()),
@@ -90,19 +112,16 @@ public class AuthService {
 
         Long userId = jwtProvider.getUserId(refreshToken);
 
-        // 서버 저장 RT 존재 + 일치 검증
-        RefreshToken saved = refreshTokenRepository.findByUserId(userId)
+        String savedToken = refreshTokenStore.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.UNAUTHORIZED_USER));
 
-        if (!saved.getToken().equals(refreshToken)) {
+        if (!savedToken.equals(refreshToken)) {
             throw new CustomException(CustomErrorCode.UNAUTHORIZED_USER);
         }
 
-        // AccessToken 재발급
         String newAccessToken = jwtProvider.createAccessToken(userId);
         addSetCookie(res, cookieProvider.createAccessTokenCookie(newAccessToken, jwtProperties.accessExpireSeconds()));
 
-        // 응답 정책: user 요약 포함 + accessToken만 내려줌
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
 
@@ -110,8 +129,6 @@ public class AuthService {
                 new AuthUserSummary(user.getId(), user.getEmail(), user.getNickname()),
                 newAccessToken
         );
-
-        // refreshToken은 쿠키로만 유지하고, 응답 Body에는 포함하지 않는다
     }
 
     public void logout(HttpServletRequest req, HttpServletResponse res) {
@@ -121,7 +138,7 @@ public class AuthService {
             try {
                 jwtProvider.validate(refreshToken);
                 Long userId = jwtProvider.getUserId(refreshToken);
-                refreshTokenRepository.deleteByUserId(userId);
+                refreshTokenStore.deleteByUserId(userId);
             } catch (Exception e) {
                 // 로그아웃은 조용히 처리 (토큰이 깨져도 쿠키 만료는 진행)
             }
@@ -132,13 +149,8 @@ public class AuthService {
     }
 
     private void upsertRefreshToken(Long userId, String refreshToken) {
-        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(jwtProperties.refreshExpireSeconds());
-
-        refreshTokenRepository.findByUserId(userId)
-                .ifPresentOrElse(
-                        existing -> existing.update(refreshToken, expiresAt),
-                        () -> refreshTokenRepository.save(RefreshToken.create(userId, refreshToken, expiresAt))
-                );
+        Duration ttl = Duration.ofSeconds(jwtProperties.refreshExpireSeconds());
+        refreshTokenStore.save(userId, refreshToken, ttl);
     }
 
     private void addSetCookie(HttpServletResponse res, ResponseCookie cookie) {

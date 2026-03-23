@@ -1,8 +1,7 @@
 package com.back.matchduo.domain.auth.controller;
 
 import com.back.matchduo.domain.auth.dto.request.LoginRequest;
-import com.back.matchduo.domain.auth.refresh.entity.RefreshToken;
-import com.back.matchduo.domain.auth.refresh.repository.RefreshTokenRepository;
+import com.back.matchduo.domain.auth.refresh.service.RefreshTokenStore;
 import com.back.matchduo.domain.user.entity.User;
 import com.back.matchduo.domain.user.repository.UserRepository;
 import com.back.matchduo.global.security.jwt.JwtProvider;
@@ -20,17 +19,20 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.back.matchduo.support.InMemoryTestConfig;
+import org.springframework.context.annotation.Import;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@Import(InMemoryTestConfig.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("Auth API 통합 테스트")
 class AuthControllerTest {
@@ -45,7 +47,7 @@ class AuthControllerTest {
     private UserRepository userRepository;
 
     @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
+    private RefreshTokenStore refreshTokenStore;
 
     @Autowired
     private JwtProvider jwtProvider;
@@ -73,6 +75,13 @@ class AuthControllerTest {
                 .verificationCode("VERIFIED")
                 .build();
         userRepository.save(testUser);
+    }
+
+    @BeforeEach
+    void clearRefreshTokenStore() {
+        if (testUser != null && testUser.getId() != null) {
+            refreshTokenStore.deleteByUserId(testUser.getId());
+        }
     }
 
     @Nested
@@ -173,14 +182,7 @@ class AuthControllerTest {
         void success_refresh() throws Exception {
             // given
             String refreshToken = jwtProvider.createRefreshToken(testUser.getId());
-
-            // DB에 RefreshToken 저장
-            RefreshToken savedToken = RefreshToken.create(
-                    testUser.getId(),
-                    refreshToken,
-                    LocalDateTime.now().plusDays(7)
-            );
-            refreshTokenRepository.save(savedToken);
+            refreshTokenStore.save(testUser.getId(), refreshToken, Duration.ofDays(7));
 
             Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
 
@@ -265,14 +267,7 @@ class AuthControllerTest {
         void success_logout() throws Exception {
             // given
             String refreshToken = jwtProvider.createRefreshToken(testUser.getId());
-
-            // DB에 RefreshToken 저장
-            RefreshToken savedToken = RefreshToken.create(
-                    testUser.getId(),
-                    refreshToken,
-                    LocalDateTime.now().plusDays(7)
-            );
-            refreshTokenRepository.save(savedToken);
+            refreshTokenStore.save(testUser.getId(), refreshToken, Duration.ofDays(7));
 
             Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
 
@@ -288,7 +283,7 @@ class AuthControllerTest {
                     .andDo(print());
 
             // DB에서 RefreshToken 삭제 확인
-            assertThat(refreshTokenRepository.findByUserId(testUser.getId())).isEmpty();
+            assertThat(refreshTokenStore.findByUserId(testUser.getId())).isEmpty();
         }
 
         @Test
