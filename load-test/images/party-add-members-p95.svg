@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<text x="90" y="38" font-size="28" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">party_add_members p95 비교</text>
+<text x="90" y="64" font-size="15" font-family="Arial, sans-serif" fill="#475569">mixed 쓰기 포함 테스트(run6, run7, run8) 기준 tail latency 비교</text>
+<line x1="90" y1="340.0" x2="880" y2="340.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="345.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">0ms</text>
+<line x1="90" y1="290.0" x2="880" y2="290.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="295.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">12ms</text>
+<line x1="90" y1="240.0" x2="880" y2="240.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="245.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">24ms</text>
+<line x1="90" y1="190.0" x2="880" y2="190.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="195.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">36ms</text>
+<line x1="90" y1="140.0" x2="880" y2="140.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="145.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">48ms</text>
+<line x1="90" y1="90.0" x2="880" y2="90.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="95.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">60ms</text>
+<line x1="90" y1="340" x2="880" y2="340" stroke="#334155" stroke-width="2"/>
+<rect x="90.0" y="112.9" width="247.3" height="227.1" rx="8" fill="#ef4444"/>
+<text x="213.7" y="102.9" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">54.50ms</text>
+<text x="213.7" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">run6</text>
+<rect x="361.3" y="138.2" width="247.3" height="201.8" rx="8" fill="#f59e0b"/>
+<text x="485.0" y="128.2" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">48.44ms</text>
+<text x="485.0" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">run7</text>
+<rect x="632.7" y="256.6" width="247.3" height="83.4" rx="8" fill="#10b981"/>
+<text x="756.3" y="246.6" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">20.01ms</text>
+<text x="756.3" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">run8</text>
+</svg>
