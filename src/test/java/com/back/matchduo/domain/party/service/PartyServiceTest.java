@@ -195,12 +195,14 @@ class PartyServiceTest {
             PartyMemberAddRequest request = new PartyMemberAddRequest(List.of(3L));
 
             given(partyRepository.findById(1L)).willReturn(Optional.of(party));
-            given(partyMemberRepository.findByPartyIdAndUserId(1L, 3L)).willReturn(Optional.empty());
-            given(userRepository.findById(3L)).willReturn(Optional.of(targetUser));
-            given(partyMemberRepository.save(any(PartyMember.class))).willAnswer(invocation -> {
-                PartyMember member = invocation.getArgument(0);
-                setId(member, 3L, PartyMember.class);
-                return member;
+            given(partyMemberRepository.findAllByPartyIdAndUserIdIn(1L, List.of(3L))).willReturn(List.of());
+            given(userRepository.findAllById(List.of(3L))).willReturn(List.of(targetUser));
+            given(partyMemberRepository.saveAll(anyList())).willAnswer(invocation -> {
+                List<PartyMember> members = invocation.getArgument(0);
+                for (int i = 0; i < members.size(); i++) {
+                    setId(members.get(i), 3L + i, PartyMember.class);
+                }
+                return members;
             });
             given(partyMemberRepository.countByPartyIdAndState(1L, PartyMemberState.JOINED)).willReturn(2);
             given(postRepository.findById(100L)).willReturn(Optional.of(post));
@@ -211,7 +213,7 @@ class PartyServiceTest {
             // then
             assertThat(result).hasSize(1);
             assertThat(result.get(0).userId()).isEqualTo(3L);
-            verify(partyMemberRepository).save(any(PartyMember.class));
+            verify(partyMemberRepository).saveAll(anyList());
         }
 
         @Test

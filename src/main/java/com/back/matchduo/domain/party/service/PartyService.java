@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -112,49 +113,75 @@ public class PartyService {
     // 파티원 추가
     @Transactional
     public List<PartyMemberAddResponse> addMembers(Long partyId, Long currentUserId, PartyMemberAddRequest request) {
-        // 1. 파티 조회
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
 
-        // 2. 권한 검증
         if (!party.getLeaderId().equals(currentUserId)) {
             throw new CustomException(CustomErrorCode.NOT_PARTY_LEADER);
         }
 
-        // 3. 상태 검증 (CLOSED,ACTIVE 이면 추가 시도 불가하도록)
         if (party.getStatus() == PartyStatus.CLOSED || party.getStatus() == PartyStatus.ACTIVE) {
             throw new CustomException(CustomErrorCode.PARTY_ALREADY_CLOSED);
         }
 
-        List<PartyMemberAddResponse> responses = new ArrayList<>();
+        List<Long> targetUserIds = request.targetUserIds().stream()
+                .distinct()
+                .toList();
 
-        for (Long targetUserId : request.targetUserIds()) {
-            Optional<PartyMember> existingMemberOpt = partyMemberRepository.findByPartyIdAndUserId(partyId, targetUserId);
-
-            if (existingMemberOpt.isPresent()) {
-                PartyMember existingMember = existingMemberOpt.get();
-                if (existingMember.getState() == PartyMemberState.JOINED) {
-                    throw new CustomException(CustomErrorCode.PARTY_ALREADY_JOINED);
-                }
-                existingMember.rejoinParty();
-                responses.add(createAddResponse(existingMember));
-            } else {
-                User targetUser = userRepository.findById(targetUserId)
-                        .orElseThrow(() -> new CustomException(CustomErrorCode.NOT_FOUND_USER));
-                PartyMember newMember = new PartyMember(party, targetUser, PartyMemberRole.MEMBER);
-                partyMemberRepository.save(newMember);
-                responses.add(createAddResponse(newMember));
-            }
+        if (targetUserIds.isEmpty()) {
+            return List.of();
         }
 
-        // 4. 인원 수 체크 및 상태 변경 (RECRUIT -> ACTIVE)
+        List<PartyMember> existingMembers = partyMemberRepository.findAllByPartyIdAndUserIdIn(partyId, targetUserIds);
+        Map<Long, PartyMember> existingByUserId = existingMembers.stream()
+                .collect(Collectors.toMap(pm -> pm.getUser().getId(), Function.identity()));
+
+        boolean alreadyJoined = existingMembers.stream()
+                .anyMatch(pm -> pm.getState() == PartyMemberState.JOINED);
+        if (alreadyJoined) {
+            throw new CustomException(CustomErrorCode.PARTY_ALREADY_JOINED);
+        }
+
+        List<Long> newUserIds = targetUserIds.stream()
+                .filter(userId -> !existingByUserId.containsKey(userId))
+                .toList();
+
+        List<User> targetUsers = userRepository.findAllById(newUserIds);
+        if (targetUsers.size() != newUserIds.size()) {
+            throw new CustomException(CustomErrorCode.NOT_FOUND_USER);
+        }
+
+        Map<Long, User> userById = targetUsers.stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        for (PartyMember existingMember : existingMembers) {
+            existingMember.rejoinParty();
+        }
+
+        List<PartyMember> newMembers = new ArrayList<>();
+        for (Long userId : newUserIds) {
+            User targetUser = userById.get(userId);
+            newMembers.add(new PartyMember(party, targetUser, PartyMemberRole.MEMBER));
+        }
+
+        if (!newMembers.isEmpty()) {
+            partyMemberRepository.saveAll(newMembers);
+        }
+
+        Map<Long, PartyMember> newMemberByUserId = newMembers.stream()
+                .collect(Collectors.toMap(pm -> pm.getUser().getId(), Function.identity()));
+
+        List<PartyMemberAddResponse> responses = new ArrayList<>();
+        for (Long targetUserId : targetUserIds) {
+            PartyMember member = existingByUserId.getOrDefault(targetUserId, newMemberByUserId.get(targetUserId));
+            responses.add(createAddResponse(member));
+        }
+
         int currentCount = partyMemberRepository.countByPartyIdAndState(partyId, PartyMemberState.JOINED);
 
-        // 모집 정원 확인
         Post post = postRepository.findById(party.getPostId())
                 .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
 
-        // 정원이 꽉 찼고, 현재 상태가 '모집 중(RECRUIT)'이라면 -> ACTIVE로 변경 및 6시간 타이머 설정
         if (currentCount >= post.getRecruitCount()) {
             if (party.getStatus() == PartyStatus.RECRUIT) {
                 PartyStatus prevStatus = party.getStatus();
