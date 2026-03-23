@@ -1,4 +1,4 @@
-HELP.md
+    HELP.md
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -62,6 +62,13 @@ replay_pid*
 
 # --- yml (local secrets) ---
 **/application-secret*.yml
+
+# --- Terraform (local secrets) ---
+*.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
 
 # --- k6 artifacts ---
 /k6/results/*
