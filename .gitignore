@@ -62,3 +62,7 @@ replay_pid*
 
 # --- yml (local secrets) ---
 **/application-secret*.yml
+
+# --- k6 artifacts ---
+/k6/results/*
+!/k6/results/.gitkeep

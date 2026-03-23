@@ -58,6 +58,10 @@ dependencies {
     implementation("com.amazonaws:aws-java-sdk-s3:1.12.777")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-mysql")
+
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers")
+
 }
 
 tasks.withType<Test> {

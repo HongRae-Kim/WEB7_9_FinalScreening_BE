@@ -4,28 +4,23 @@ spring:
       on-profile: test
 
   datasource:
-    url: jdbc:mysql://localhost:3306/${DB_NAME}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:h2:mem:matchduo;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=USER
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
 
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect
+    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         highlight_sql: false
-        use_sql_comments: true
+        use_sql_comments: false
 
   flyway:
     enabled: false
-
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password: ${REDIS_PASSWORD}
 
   mail:
     host: test

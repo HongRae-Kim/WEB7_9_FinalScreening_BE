@@ -15,6 +15,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./k6/sql/load-test-seed.sql:/docker-entrypoint-initdb.d/02-load-test-seed.sql:ro
     restart: unless-stopped
 
   redis:
