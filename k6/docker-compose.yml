@@ -5,10 +5,12 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --web.enable-remote-write-receiver
+      - --storage.tsdb.path=/prometheus
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -21,13 +23,17 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
 
   k6:
     image: grafana/k6:latest
     container_name: matchduo-k6
+    entrypoint:
+      - /bin/sh
+      - /work/k6/run.sh
     working_dir: /work
     volumes:
       - ..:/work
@@ -36,8 +42,10 @@ services:
     environment:
       K6_PROMETHEUS_RW_SERVER_URL: http://prometheus:9090/api/v1/write
       K6_PROMETHEUS_RW_TREND_STATS: p(95),p(99),min,max,avg
-    command: ["run", "-o", "experimental-prometheus-rw", "/work/k6/main.js"]
     depends_on:
       - prometheus
     profiles:
       - manual
+
+volumes:
+  prometheus_data:

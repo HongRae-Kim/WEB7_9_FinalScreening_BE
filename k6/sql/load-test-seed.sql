@@ -35,10 +35,20 @@ SELECT @now, @now, NULL, b'1',
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM user WHERE email = 'loadtest3@example.com');
 
-SET @user_main = (SELECT id FROM user WHERE email = 'ghdfo7882@gmail.com' LIMIT 1);
-SET @user_2 = (SELECT id FROM user WHERE email = 'loadtest1@example.com' LIMIT 1);
-SET @user_3 = (SELECT id FROM user WHERE email = 'loadtest2@example.com' LIMIT 1);
-SET @user_4 = (SELECT id FROM user WHERE email = 'loadtest3@example.com' LIMIT 1);
+INSERT INTO user (
+    created_at, updated_at, deleted_at, is_active,
+    email, password, nickname, comment, profile_image, verification_code, nickname_updated_at
+)
+SELECT @now, @now, NULL, b'1',
+       'loadtest4@example.com', @password_hash, 'loadtest4',
+       'load test user 4', NULL, 'VERIFIED', NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM user WHERE email = 'loadtest4@example.com');
+
+SET @user_main = (SELECT id FROM user WHERE email = 'loadtest1@example.com' LIMIT 1);
+SET @user_2 = (SELECT id FROM user WHERE email = 'loadtest2@example.com' LIMIT 1);
+SET @user_3 = (SELECT id FROM user WHERE email = 'loadtest3@example.com' LIMIT 1);
+SET @user_4 = (SELECT id FROM user WHERE email = 'loadtest4@example.com' LIMIT 1);
 
 -- 2) Game accounts
 INSERT INTO game_account (
@@ -293,11 +303,11 @@ WHERE NOT EXISTS (SELECT 1 FROM chat_message_read WHERE chat_room_id = @room_2 A
 
 -- 6) Messages for room and read scenarios
 INSERT INTO chat_message (content, created_at, message_type, session_no, chat_room_id, sender_id)
-SELECT 'hello from loadtest1', DATE_SUB(@now, INTERVAL 9 MINUTE), 'TEXT', 1, @room_1, @user_2
+SELECT 'hello from loadtest2', DATE_SUB(@now, INTERVAL 9 MINUTE), 'TEXT', 1, @room_1, @user_2
 FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM chat_message
-    WHERE chat_room_id = @room_1 AND content = 'hello from loadtest1'
+    WHERE chat_room_id = @room_1 AND content = 'hello from loadtest2'
 );
 
 INSERT INTO chat_message (content, created_at, message_type, session_no, chat_room_id, sender_id)
@@ -317,11 +327,11 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO chat_message (content, created_at, message_type, session_no, chat_room_id, sender_id)
-SELECT 'hello from loadtest2', DATE_SUB(@now, INTERVAL 6 MINUTE), 'TEXT', 1, @room_2, @user_3
+SELECT 'hello from loadtest3', DATE_SUB(@now, INTERVAL 6 MINUTE), 'TEXT', 1, @room_2, @user_3
 FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM chat_message
-    WHERE chat_room_id = @room_2 AND content = 'hello from loadtest2'
+    WHERE chat_room_id = @room_2 AND content = 'hello from loadtest3'
 );
 
 INSERT INTO chat_message (content, created_at, message_type, session_no, chat_room_id, sender_id)
