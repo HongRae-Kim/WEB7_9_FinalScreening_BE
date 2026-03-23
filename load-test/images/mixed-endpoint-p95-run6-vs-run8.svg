@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<text x="90" y="38" font-size="28" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">mixed endpoint p95 비교</text>
+<text x="90" y="64" font-size="15" font-family="Arial, sans-serif" fill="#475569">개선 전 기준 run6과 개선 확인 run8의 endpoint p95 비교</text>
+<line x1="90" y1="340.0" x2="880" y2="340.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="345.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">0ms</text>
+<line x1="90" y1="290.0" x2="880" y2="290.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="295.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">34ms</text>
+<line x1="90" y1="240.0" x2="880" y2="240.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="245.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">68ms</text>
+<line x1="90" y1="190.0" x2="880" y2="190.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="195.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">102ms</text>
+<line x1="90" y1="140.0" x2="880" y2="140.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="145.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">136ms</text>
+<line x1="90" y1="90.0" x2="880" y2="90.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="80" y="95.0" text-anchor="end" font-size="12" font-family="Arial, sans-serif" fill="#64748b">170ms</text>
+<line x1="90" y1="340" x2="880" y2="340" stroke="#334155" stroke-width="2"/>
+<rect x="90.0" y="111.5" width="57.4" height="228.5" rx="8" fill="#dc2626"/>
+<text x="118.7" y="101.5" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">155.38ms</text>
+<text x="118.7" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">auth r6</text>
+<rect x="171.4" y="148.8" width="57.4" height="191.2" rx="8" fill="#f87171"/>
+<text x="200.1" y="138.8" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">130.03ms</text>
+<text x="200.1" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">auth r8</text>
+<rect x="252.8" y="315.6" width="57.4" height="24.4" rx="8" fill="#2563eb"/>
+<text x="281.5" y="305.6" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">16.57ms</text>
+<text x="281.5" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">posts r6</text>
+<rect x="334.2" y="312.0" width="57.4" height="28.0" rx="8" fill="#60a5fa"/>
+<text x="362.9" y="302.0" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">19.02ms</text>
+<text x="362.9" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">posts r8</text>
+<rect x="415.6" y="311.8" width="57.4" height="28.2" rx="8" fill="#7c3aed"/>
+<text x="444.3" y="301.8" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">19.17ms</text>
+<text x="444.3" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">chat r6</text>
+<rect x="497.0" y="317.8" width="57.4" height="22.2" rx="8" fill="#a78bfa"/>
+<text x="525.7" y="307.8" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">15.11ms</text>
+<text x="525.7" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">chat r8</text>
+<rect x="578.4" y="313.4" width="57.4" height="26.6" rx="8" fill="#0891b2"/>
+<text x="607.1" y="303.4" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">18.07ms</text>
+<text x="607.1" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">party-read r6</text>
+<rect x="659.8" y="319.4" width="57.4" height="20.6" rx="8" fill="#67e8f9"/>
+<text x="688.5" y="309.4" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">13.99ms</text>
+<text x="688.5" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">party-read r8</text>
+<rect x="741.2" y="259.9" width="57.4" height="80.1" rx="8" fill="#ea580c"/>
+<text x="769.9" y="249.9" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">54.50ms</text>
+<text x="769.9" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">party-add r6</text>
+<rect x="822.6" y="310.6" width="57.4" height="29.4" rx="8" fill="#fdba74"/>
+<text x="851.3" y="300.6" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">20.01ms</text>
+<text x="851.3" y="364.0" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#334155">party-add r8</text>
+</svg>
