@@ -40,12 +40,15 @@ public class AuthCookieProvider {
     }
 
     private ResponseCookie buildCookie(String name, String value, long maxAgeSeconds) {
-        return ResponseCookie.from(name, value)
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(cookieProperties.secure())
                 .sameSite(cookieProperties.sameSite())
                 .path(cookieProperties.path())
-                .maxAge(Duration.ofSeconds(maxAgeSeconds))
-                .build();
+                .maxAge(Duration.ofSeconds(maxAgeSeconds));
+        if (cookieProperties.domain() != null && !cookieProperties.domain().isEmpty()) {
+            builder.domain(cookieProperties.domain());
+        }
+        return builder.build();
     }
 }

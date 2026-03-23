@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record CookieProperties(
         boolean secure,
         String sameSite,
-        String path
+        String path,
+        String domain
 ) {
 }

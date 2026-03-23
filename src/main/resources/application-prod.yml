@@ -46,6 +46,7 @@ custom:
   cookie:
     secure: true
     sameSite: "None"
+    domain: ${COOKIE_DOMAIN:}
 
 cloud:
   aws:
