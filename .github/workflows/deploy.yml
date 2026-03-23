@@ -103,7 +103,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           instance-ids: ${{ env.INSTANCE_ID }}
-          working-directory: /home/ubuntu
+          working-directory: /home/ec2-user
           comment: Deploy
           command: |
             # 변수 설정
@@ -138,6 +138,7 @@ jobs:
               --network $NETWORK \
               --name "$NEXT" \
               -p "$NEXT_PORT":8080 \
+              --env-file /home/ec2-user/app.env \
               -e SPRING_PROFILES_ACTIVE=prod \
               "$IMAGE" || { echo "❌ 컨테이너 실행 실패"; exit 1; }
             
