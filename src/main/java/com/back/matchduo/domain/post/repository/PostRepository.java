@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
@@ -19,4 +20,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 특정 게임 계정을 참조하는 활성 Post 조회 (isActive = true, status != CLOSED)
     @Query("SELECT COUNT(p) > 0 FROM Post p WHERE p.gameAccount.gameAccountId = :gameAccountId AND p.isActive = true AND p.status != 'CLOSED'")
     boolean existsActivePostByGameAccountId(@Param("gameAccountId") Long gameAccountId);
+
+    Optional<Post> findFirstByMemo(String memo);
 }

@@ -45,6 +45,7 @@ logging:
     org.hibernate.orm.jdbc.bind: WARN
     org.hibernate.orm.jdbc.extract: WARN
     org.springframework.transaction.interceptor: INFO
+    org.springframework.data.repository.config: ERROR
     com.back.matchduo: INFO
 
 custom:
@@ -71,3 +72,7 @@ management:
   metrics:
     tags:
       application: matchmyduo
+
+app:
+  seed:
+    test-enabled: false
