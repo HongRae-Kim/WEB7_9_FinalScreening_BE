@@ -112,57 +112,47 @@ jobs:
             HEALTH_ENDPOINT="/actuator/health"
             TIMEOUT=120
             
-            # 이미지 풀 및 비밀번호 생성 (이전과 동일)
+            # 이미지 풀
             echo "${{ secrets.MY_GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
             docker pull "$IMAGE" || { echo "❌ 이미지 풀 실패"; exit 1; }
-            
-            # 현재 실행 중인 컨테이너 확인
-            if docker ps --format '{{.Names}}' | grep -q "app1_1"; then
-              CURRENT="app1_1"
-              CURRENT_PORT=8080
-              NEXT="app1_2"
-              NEXT_PORT=8081 # 헬스체크용 외부포트
-            else
-              CURRENT="app1_2"
-              CURRENT_PORT=8081
-              NEXT="app1_1"
-              NEXT_PORT=8080 # 헬스체크용 외부포트
-            fi
-            
-            # 신규 컨테이너 실행 (app1_1 또는 app1_2 이름 유지)
-            docker stop "$NEXT" 2>/dev/null || true
-            docker rm "$NEXT" 2>/dev/null || true
-            
+
+            CONTAINER_NAME="app1_1"
+            CONTAINER_PORT=8080
+
+            # 기존 컨테이너 정리
+            docker stop "$CONTAINER_NAME" 2>/dev/null || true
+            docker rm "$CONTAINER_NAME" 2>/dev/null || true
+            # blue-green 잔여 컨테이너 정리
+            docker stop app1_2 2>/dev/null || true
+            docker rm app1_2 2>/dev/null || true
+
             docker run -d \
               --restart always \
               --network $NETWORK \
-              --name "$NEXT" \
-              -p "$NEXT_PORT":8080 \
+              --name "$CONTAINER_NAME" \
+              -p "$CONTAINER_PORT":8080 \
               --env-file /home/ec2-user/app.env \
               -e SPRING_PROFILES_ACTIVE=prod \
               "$IMAGE" || { echo "❌ 컨테이너 실행 실패"; exit 1; }
-            
+
             # 헬스 체크
-            echo ">>> $NEXT 헬스체크 시작..."
+            echo ">>> 헬스체크 시작..."
             START_TIME=$(date +%s)
             while true; do
-              UP=$(curl -s http://localhost:$NEXT_PORT$HEALTH_ENDPOINT | grep 'UP' || true)
+              UP=$(curl -s http://localhost:$CONTAINER_PORT$HEALTH_ENDPOINT | grep 'UP' || true)
               if [ -n "$UP" ]; then
-                echo "✅ $NEXT 가 준비되었습니다."
+                echo "✅ $CONTAINER_NAME 가 준비되었습니다."
                 break
               fi
 
               if [ $(( $(date +%s) - START_TIME )) -ge $TIMEOUT ]; then
                 echo "❌ 헬스체크 타임아웃! 컨테이너 로그를 출력합니다:"
-                docker logs "$NEXT"
-                docker stop "$NEXT" && docker rm "$NEXT"
+                docker logs "$CONTAINER_NAME"
+                docker stop "$CONTAINER_NAME" && docker rm "$CONTAINER_NAME"
                 exit 1
               fi
               sleep 5
             done
 
-            # 이전 컨테이너 정리
-            docker stop "$CURRENT" 2>/dev/null || true
-            docker rm "$CURRENT" 2>/dev/null || true
             docker image prune -f
-            echo "🚀 배포 완료: $NEXT 가 가동 중입니다."
+            echo "🚀 배포 완료: $CONTAINER_NAME 가 가동 중입니다."
