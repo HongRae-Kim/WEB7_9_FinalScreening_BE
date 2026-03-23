@@ -207,6 +207,9 @@ docker compose up -d
 
 ## 컨벤션
 
+<details>
+<summary>코드 컨벤션</summary>
+
 ### 작업 순서
 
 1. **이슈 생성** → 작업 단위 정의
@@ -238,3 +241,8 @@ docker compose up -d
 | `rename` | 파일/폴더명 수정 또는 이동 |
 | `remove` | 파일 삭제 |
 | `init` | 초기 생성 |
+
+</details>
+
+
+
