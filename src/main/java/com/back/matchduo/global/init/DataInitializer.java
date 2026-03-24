@@ -19,6 +19,7 @@ import com.back.matchduo.domain.party.repository.PartyRepository;
 import com.back.matchduo.domain.post.entity.GameMode;
 import com.back.matchduo.domain.post.entity.Position;
 import com.back.matchduo.domain.post.entity.Post;
+import com.back.matchduo.domain.post.entity.PostStatus;
 import com.back.matchduo.domain.post.entity.QueueType;
 import com.back.matchduo.domain.post.repository.PostRepository;
 import com.back.matchduo.domain.user.entity.User;
@@ -34,6 +35,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -221,6 +223,8 @@ public class DataInitializer implements ApplicationRunner {
         // p4: ACTIVE (리더 + 멤버 → 풀파티)
         Party party4 = new Party(p4.getId(), u6.getId());
         partyRepository.save(party4);
+        party4.activateParty(LocalDateTime.now().plusHours(6));
+        p4.updateStatus(PostStatus.ACTIVE);
         partyMemberRepository.saveAll(List.of(
                 PartyMember.builder().party(party4).user(u6).role(PartyMemberRole.LEADER).build(),
                 PartyMember.builder().party(party4).user(u8).role(PartyMemberRole.MEMBER).build()
@@ -267,6 +271,8 @@ public class DataInitializer implements ApplicationRunner {
         // p10: ACTIVE (리더 + 멤버 → 풀파티)
         Party party10 = new Party(p10.getId(), u14.getId());
         partyRepository.save(party10);
+        party10.activateParty(LocalDateTime.now().plusHours(6));
+        p10.updateStatus(PostStatus.ACTIVE);
         partyMemberRepository.saveAll(List.of(
                 PartyMember.builder().party(party10).user(u14).role(PartyMemberRole.LEADER).build(),
                 PartyMember.builder().party(party10).user(u7).role(PartyMemberRole.MEMBER).build()
@@ -286,6 +292,34 @@ public class DataInitializer implements ApplicationRunner {
         partyMemberRepository.save(
                 PartyMember.builder().party(party12).user(u9).role(PartyMemberRole.LEADER).build()
         );
+
+        // ── 6-1. CLOSED Posts + Parties (완료된 모집글 2개) ──
+        Post p13 = buildPost(u2, ga2, GameMode.SUMMONERS_RIFT, QueueType.DUO, Position.SUPPORT,
+                "[\"ADC\"]", true, 2, "서폿 장인 원딜 듀오 구합니다");
+        Post p14 = buildPost(u13, ga13, GameMode.SUMMONERS_RIFT, QueueType.DUO, Position.MID,
+                "[\"JUNGLE\"]", true, 2, "미드 정글 듀오 같이 랭크 돌리실 분");
+        postRepository.saveAll(List.of(p13, p14));
+
+        p13.updateStatus(PostStatus.CLOSED);
+        p14.updateStatus(PostStatus.CLOSED);
+
+        Party party13 = new Party(p13.getId(), u2.getId());
+        partyRepository.save(party13);
+        party13.activateParty(LocalDateTime.now().minusHours(7));
+        party13.closeParty();
+        partyMemberRepository.saveAll(List.of(
+                PartyMember.builder().party(party13).user(u2).role(PartyMemberRole.LEADER).build(),
+                PartyMember.builder().party(party13).user(u7).role(PartyMemberRole.MEMBER).build()
+        ));
+
+        Party party14 = new Party(p14.getId(), u13.getId());
+        partyRepository.save(party14);
+        party14.activateParty(LocalDateTime.now().minusHours(7));
+        party14.closeParty();
+        partyMemberRepository.saveAll(List.of(
+                PartyMember.builder().party(party14).user(u13).role(PartyMemberRole.LEADER).build(),
+                PartyMember.builder().party(party14).user(u1).role(PartyMemberRole.MEMBER).build()
+        ));
 
         // ── 7. ChatRooms + ChatMessages (6개) ──
         // u2 → p1(u1 글)
@@ -341,8 +375,8 @@ public class DataInitializer implements ApplicationRunner {
                 ChatMessage.create(room6, u11, MessageType.TEXT, "ㅎㅎ 환영합니다 바로 초대할게요")
         ));
 
-        log.info("Test data seeded: users={}, posts={}, parties={}, chatRooms={}",
-                15, 12, 12, 6);
+        log.info("Test data seeded: users={}, posts={} (RECRUIT={}, ACTIVE={}, CLOSED={}), parties={}, chatRooms={}",
+                15, 14, 8, 2, 2, 14, 6);
     }
 
     private GameAccount buildGameAccount(String nickname, String tag, String puuid, int iconId, User user) {
