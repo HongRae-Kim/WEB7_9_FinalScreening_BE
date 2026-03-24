@@ -15,5 +15,9 @@ public class RefreshAllResponse {
     private List<RankResponse> ranks;
     private List<MatchResponse> matches;
     private String message;
+
+    private boolean rankUpdated;
+    private boolean matchUpdated;
+    private List<String> warnings;
 }
 
