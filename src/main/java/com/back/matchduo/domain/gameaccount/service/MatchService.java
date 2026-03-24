@@ -356,32 +356,33 @@ public class MatchService {
         if (spellId == null) {
             return null;
         }
-        String spellName = getSpellName(spellId);
-        if (spellName == null) {
+        String spellFileName = getSpellFileName(spellId);
+        if (spellFileName == null) {
             return null;
         }
-        return String.format("https://ddragon.leagueoflegends.com/cdn/%s/img/spell/Summoner%s.png", 
-                version, spellName);
+        return String.format("https://ddragon.leagueoflegends.com/cdn/%s/img/spell/%s.png",
+                version, spellFileName);
     }
 
     /**
-     * 스펠 ID를 스펠 이름으로 변환
+     * 스펠 ID를 Data Dragon 파일명으로 변환
      */
-    private String getSpellName(Integer spellId) {
+    private String getSpellFileName(Integer spellId) {
         if (spellId == null) {
             return null;
         }
         return switch (spellId) {
-            case 1 -> "Boost";
-            case 3 -> "Exhaust";
-            case 4 -> "Flash";
-            case 6 -> "Haste";
-            case 7 -> "Heal";
-            case 11 -> "Smite";
-            case 12 -> "Teleport";
-            case 13 -> "Mana";
-            case 14 -> "Ignite";
-            case 21 -> "Barrier";
+            case 1 -> "SummonerBoost";
+            case 3 -> "SummonerExhaust";
+            case 4 -> "SummonerFlash";
+            case 6 -> "SummonerHaste";
+            case 7 -> "SummonerHeal";
+            case 11 -> "SummonerSmite";
+            case 12 -> "SummonerTeleport";
+            case 13 -> "SummonerMana";
+            case 14 -> "SummonerDot";
+            case 21 -> "SummonerBarrier";
+            case 32 -> "SummonerSnowball";
             default -> null;
         };
     }

@@ -306,3 +306,96 @@ resource "aws_instance" "ec2_1" {
 ${local.ec2_user_data_base}
 EOF
 }
+
+# Elastic IP 할당
+resource "aws_eip" "eip_1" {
+  instance = aws_instance.ec2_1.id
+  domain   = "vpc"
+
+  tags = {
+    Name = "${var.prefix}-eip-1"
+  }
+}
+
+# EC2 자동 시작/중지 스케줄 설정
+
+# EventBridge Scheduler용 IAM Role
+resource "aws_iam_role" "scheduler_role" {
+  name = "${var.prefix}-scheduler-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "scheduler.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "scheduler_ec2_policy" {
+  name = "${var.prefix}-scheduler-ec2-policy"
+  role = aws_iam_role.scheduler_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:StartInstances",
+          "ec2:StopInstances"
+        ]
+        Resource = aws_instance.ec2_1.arn
+      }
+    ]
+  })
+}
+
+# 매일 09:00 KST 시작
+resource "aws_scheduler_schedule" "ec2_start" {
+  name       = "${var.prefix}-ec2-start"
+  group_name = "default"
+
+  schedule_expression          = "cron(0 9 * * ? *)"
+  schedule_expression_timezone = "Asia/Seoul"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:ec2:startInstances"
+    role_arn = aws_iam_role.scheduler_role.arn
+
+    input = jsonencode({
+      InstanceIds = [aws_instance.ec2_1.id]
+    })
+  }
+}
+
+# 매일 22:00 KST 중지
+resource "aws_scheduler_schedule" "ec2_stop" {
+  name       = "${var.prefix}-ec2-stop"
+  group_name = "default"
+
+  schedule_expression          = "cron(0 22 * * ? *)"
+  schedule_expression_timezone = "Asia/Seoul"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:ec2:stopInstances"
+    role_arn = aws_iam_role.scheduler_role.arn
+
+    input = jsonencode({
+      InstanceIds = [aws_instance.ec2_1.id]
+    })
+  }
+}
