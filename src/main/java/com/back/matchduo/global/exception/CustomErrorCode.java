@@ -103,6 +103,11 @@ public enum CustomErrorCode {
     RIOT_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "Riot API에서 해당 게임 계정을 찾을 수 없습니다. 닉네임과 태그를 확인해주세요."),
     RANK_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "랭크 정보를 가져오는데 실패했습니다."),
     GAME_ACCOUNT_HAS_ACTIVE_POST(HttpStatus.BAD_REQUEST, "활성 모집글이 있는 게임 계정은 삭제할 수 없습니다. 먼저 모집글을 종료해주세요."),
+    RIOT_API_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Riot API 인증에 실패했습니다. API 키를 확인해주세요."),
+    RIOT_API_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "Riot API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."),
+    RIOT_DATA_NOT_FOUND(HttpStatus.NOT_FOUND, "Riot API에서 해당 데이터를 찾을 수 없습니다."),
+    PARTIAL_REFRESH_FAILED(HttpStatus.OK, "일부 전적 데이터만 갱신되었습니다."),
+    MATCH_AND_RANK_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "랭크 정보와 매치 정보 갱신에 모두 실패했습니다."),
 
     // 7. Match (매치)
     MATCH_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "매치 정보를 가져오는데 실패했습니다."),

@@ -1,11 +1,13 @@
 package com.back.matchduo.domain.gameaccount.service;
 
 import com.back.matchduo.domain.gameaccount.client.RiotApiClient;
+import com.back.matchduo.domain.gameaccount.dto.RiotApiDto;
 import com.back.matchduo.domain.gameaccount.dto.request.GameAccountCreateRequest;
 import com.back.matchduo.domain.gameaccount.dto.request.GameAccountUpdateRequest;
 import com.back.matchduo.domain.gameaccount.dto.response.GameAccountResponse;
+import com.back.matchduo.domain.gameaccount.dto.response.MatchResponse;
+import com.back.matchduo.domain.gameaccount.dto.response.RankResponse;
 import com.back.matchduo.domain.gameaccount.dto.response.RefreshAllResponse;
-import com.back.matchduo.domain.gameaccount.dto.RiotApiDto;
 import com.back.matchduo.domain.gameaccount.entity.GameAccount;
 import com.back.matchduo.domain.gameaccount.repository.GameAccountRepository;
 import com.back.matchduo.domain.gameaccount.repository.RankRepository;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -391,18 +394,76 @@ public class GameAccountService {
     public RefreshAllResponse refreshAll(Long gameAccountId, Long userId, int matchCount) {
         log.info("통합 전적 갱신 시작: gameAccountId={}, 요청 userId={}, matchCount={}", gameAccountId, userId, matchCount);
 
-        // 1. 랭크 정보 갱신
-        var ranks = rankService.refreshRankData(gameAccountId, userId);
-        log.info("랭크 정보 갱신 완료: gameAccountId={}, 갱신된 랭크 개수={}", gameAccountId, ranks.size());
+        // 게임 계정 조회
+        GameAccount gameAccount = gameAccountRepository.findById(gameAccountId)
+                .orElseThrow(() -> new CustomException(CustomErrorCode.GAME_ACCOUNT_NOT_FOUND));
 
-        // 2. 매치 정보 갱신
-        var matches = matchService.refreshMatchHistory(gameAccountId, userId, matchCount);
-        log.info("매치 정보 갱신 완료: gameAccountId={}, 갱신된 매치 개수={}", gameAccountId, matches.size());
+        // puuid가 없으면 Riot API로 재조회 시도
+        if (gameAccount.getPuuid() == null) {
+            log.info("puuid가 null입니다. Riot API로 재조회 시도: gameAccountId={}, nickname={}, tag={}",
+                    gameAccountId, gameAccount.getGameNickname(), gameAccount.getGameTag());
+
+            try {
+                RiotApiDto.AccountResponse accountResponse = riotApiClient.getAccountByRiotId(
+                        gameAccount.getGameNickname(),
+                        gameAccount.getGameTag()
+                );
+                if (accountResponse != null && accountResponse.getPuuid() != null) {
+                    gameAccount.updatePuuid(accountResponse.getPuuid());
+                    gameAccountRepository.save(gameAccount);
+                } else {
+                    throw new CustomException(CustomErrorCode.GAME_ACCOUNT_NOT_FOUND);
+                }
+            } catch (CustomException e) {
+                throw e;
+            } catch (Exception e) {
+                log.error("puuid 재조회 실패: gameAccountId={}, error={}",  gameAccountId, e.getMessage());
+                throw new CustomException(CustomErrorCode.GAME_ACCOUNT_NO_PUUID);
+            }
+        }
+
+        List<RankResponse> ranks = List.of();
+        List<MatchResponse> matches = List.of();
+        List<String> warnings = new ArrayList<>();
+
+        boolean rankUpdated = false;
+        boolean matchUpdated = false;
+
+        // 랭크 정보 갱신
+        try {
+            ranks = rankService.refreshRankData(gameAccountId, userId);
+            rankUpdated = true;
+        } catch (CustomException e) {
+            warnings.add("랭크 정보 갱신 실패: " + e.getMessage());
+            log.warn("랭크 정보 갱신 실패: gameAccountId={}, code={}, message={}", gameAccountId, e.getErrorCode(), e.getMessage());
+        } catch (Exception e) {
+            warnings.add("랭크 정보 갱신 실패");
+            log.warn("랭크 정보 갱신 실패: gameAccountId={}, error={}", gameAccountId, e.getMessage());
+        }
+
+        // 매치 정보 갱신
+        try {
+            matches = matchService.refreshMatchHistory(gameAccountId, userId, matchCount);
+            matchUpdated = true;
+        } catch (CustomException e) {
+            warnings.add("매치 정보 갱신 실패: " + e.getMessage());
+            log.warn("매치 정보 갱신 실패: gameAccountId={}, code={}, message={}", gameAccountId, e.getErrorCode(), e.getMessage());
+        } catch (Exception e) {
+            warnings.add("매치 정보 갱신 실패");
+            log.warn("매치 정보 갱신 실패: gameAccountId={}, error={}", gameAccountId, e.getMessage());
+        }
+
+        if (!rankUpdated && !matchUpdated) {
+            throw new CustomException(CustomErrorCode.MATCH_AND_RANK_FETCH_FAILED);
+        }
 
         return RefreshAllResponse.builder()
                 .ranks(ranks)
                 .matches(matches)
-                .message("전적 갱신이 완료되었습니다.")
+                .rankUpdated(rankUpdated)
+                .matchUpdated(matchUpdated)
+                .warnings(warnings)
+                .message(warnings.isEmpty() ? "전적 갱신이 완료되었습니다." : "일부 전적 데이터만 갱신되었습니다.")
                 .build();
     }
 }

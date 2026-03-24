@@ -70,4 +70,8 @@ public class GameAccount extends BaseEntity {
     public void updateProfileIconId(Integer profileIconId) {
         this.profileIconId = profileIconId;
     }
+
+    public void updatePuuid(String puuid) {
+        this.puuid = puuid;
+    }
 }
