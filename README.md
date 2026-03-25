@@ -15,7 +15,7 @@
 | 🎯 게임별 맞춤 매칭 | 💬 실시간 소통 | 🤝 신뢰할 수 있는 파트너 찾기 |
 |:---:|:---:|:---:|
 
-🔗 **[서비스 바로가기](https://matchmyduo.shop/)** | 📄 **[API 문서](https://api.matchmyduo.shop/swagger-ui/index.html)** | 📊 **[부하테스트 보고서](load-test/README.md)**
+🔗 **[서비스 바로가기](https://matchmyduo.shop/)** | 📄 **[API 문서](https://api.matchmyduo.cloud/swagger-ui/index.html)** | 📊 **[부하테스트 보고서](load-test/README.md)**
 
 ---
 
