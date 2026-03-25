@@ -122,6 +122,16 @@
 
 ---
 
+## 아키텍처
+
+프런트엔드는 Vercel에 배포된 Next.js 애플리케이션이고, 백엔드는 AWS EC2 내부 Docker 런타임에서 Spring Boot API, MySQL, Redis를 함께 운영합니다.  
+Reverse Proxy를 통해 REST API와 WebSocket/STOMP 요청을 전달하고, Riot API와 S3를 외부 서비스로 연동합니다.  
+인프라는 Terraform으로 관리하고, k6, Prometheus, Grafana로 부하테스트와 모니터링을 구성했습니다.
+
+![Architecture](docs/MatchMyDuo_Architecture.svg)
+
+---
+
 ## ERD
 
 ![ERD](docs/MatchMyDuo_ERD.png)
@@ -243,6 +253,5 @@ docker compose up -d
 | `init` | 초기 생성 |
 
 </details>
-
 
 

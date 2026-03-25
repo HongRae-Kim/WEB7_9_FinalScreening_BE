@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">MatchMyDuo Architecture</title>
+  <desc id="desc">Frontend on Vercel connects to Spring Boot backend on AWS EC2 with reverse proxy and Docker containers for MySQL and Redis, plus external integrations to Riot API, S3, and monitoring stack.</desc>
+  <defs>
+    <style>
+      .title { font: 700 28px 'Pretendard', 'Noto Sans KR', Arial, sans-serif; fill: #0f172a; }
+      .label { font: 600 18px 'Pretendard', 'Noto Sans KR', Arial, sans-serif; fill: #0f172a; }
+      .small { font: 500 15px 'Pretendard', 'Noto Sans KR', Arial, sans-serif; fill: #334155; }
+      .tiny { font: 500 13px 'Pretendard', 'Noto Sans KR', Arial, sans-serif; fill: #475569; }
+      .group { fill: #f8fafc; stroke: #334155; stroke-width: 2.5; }
+      .frontend { fill: #e0f2fe; stroke: #0ea5e9; stroke-width: 2.5; }
+      .backend { fill: #ecfccb; stroke: #65a30d; stroke-width: 2.5; }
+      .proxy { fill: #ede9fe; stroke: #7c3aed; stroke-width: 2.5; }
+      .storage { fill: #fff7ed; stroke: #ea580c; stroke-width: 2.5; }
+      .external { fill: #fef2f2; stroke: #dc2626; stroke-width: 2.5; }
+      .ops { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2.5; }
+      .person, .arrow { stroke: #0f172a; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .dash { stroke-dasharray: 8 8; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#0f172a"/>
+    </marker>
+  </defs>
+
+  <text x="600" y="42" text-anchor="middle" class="title">MatchMyDuo Architecture</text>
+  <circle cx="600" cy="84" r="18" class="person"/>
+  <path d="M600 102 L600 150 M575 122 L625 122 M600 150 L580 182 M600 150 L620 182" class="person"/>
+  <text x="600" y="208" text-anchor="middle" class="label">User</text>
+
+  <rect x="440" y="230" rx="18" ry="18" width="320" height="92" class="frontend"/>
+  <text x="600" y="268" text-anchor="middle" class="label">Frontend</text>
+  <text x="600" y="294" text-anchor="middle" class="small">Next.js on Vercel</text>
+
+  <rect x="280" y="360" rx="30" ry="30" width="640" height="300" class="group"/>
+  <text x="320" y="392" class="label">AWS EC2</text>
+  <text x="320" y="416" class="tiny">Single-host deployment</text>
+
+  <rect x="520" y="398" rx="16" ry="16" width="160" height="74" class="proxy"/>
+  <text x="600" y="430" text-anchor="middle" class="label">Reverse Proxy</text>
+  <text x="600" y="454" text-anchor="middle" class="small">Nginx Proxy Manager</text>
+
+  <rect x="365" y="488" rx="28" ry="28" width="470" height="130" class="group"/>
+  <text x="395" y="520" class="label">Docker Runtime</text>
+
+  <rect x="402" y="534" rx="20" ry="20" width="235" height="62" class="backend"/>
+  <text x="520" y="565" text-anchor="middle" class="label">Backend API</text>
+  <text x="520" y="588" text-anchor="middle" class="small">Spring Boot / Security / JWT / STOMP</text>
+
+  <rect x="658" y="534" rx="20" ry="20" width="145" height="62" class="storage"/>
+  <text x="730" y="565" text-anchor="middle" class="label">Redis</text>
+  <text x="730" y="588" text-anchor="middle" class="small">Refresh Token / Unread Cache</text>
+
+  <rect x="402" y="615" rx="20" ry="20" width="235" height="62" class="storage"/>
+  <text x="520" y="646" text-anchor="middle" class="label">MySQL</text>
+  <text x="520" y="669" text-anchor="middle" class="small">Persistent Data + Flyway Migration</text>
+
+  <rect x="72" y="426" rx="24" ry="24" width="160" height="86" class="external"/>
+  <text x="152" y="462" text-anchor="middle" class="label">Riot API</text>
+  <text x="152" y="487" text-anchor="middle" class="small">Match / Rank / Summoner</text>
+
+  <rect x="955" y="466" rx="24" ry="24" width="170" height="86" class="storage"/>
+  <text x="1040" y="502" text-anchor="middle" class="label">Amazon S3</text>
+  <text x="1040" y="527" text-anchor="middle" class="small">Profile / File Storage</text>
+
+  <rect x="74" y="600" rx="24" ry="24" width="180" height="96" class="ops"/>
+  <text x="164" y="634" text-anchor="middle" class="label">Infra / CI</text>
+  <text x="164" y="660" text-anchor="middle" class="small">Terraform / GitHub Actions</text>
+  <text x="164" y="682" text-anchor="middle" class="small">Docker Compose</text>
+
+  <rect x="865" y="608" rx="24" ry="24" width="255" height="96" class="ops"/>
+  <text x="992" y="642" text-anchor="middle" class="label">Observability / Load Test</text>
+  <text x="992" y="668" text-anchor="middle" class="small">k6 / Prometheus / Grafana</text>
+
+  <line x1="600" y1="182" x2="600" y2="224" class="arrow" marker-end="url(#arrow)"/>
+  <line x1="600" y1="322" x2="600" y2="390" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M760 276 H845 V398 H688" class="arrow dash" marker-end="url(#arrow)"/>
+  <text x="815" y="268" text-anchor="middle" class="tiny">WebSocket / STOMP</text>
+  <line x1="600" y1="472" x2="520" y2="528" class="arrow" marker-end="url(#arrow)"/>
+  <line x1="600" y1="472" x2="730" y2="528" class="arrow" marker-end="url(#arrow)"/>
+  <line x1="600" y1="472" x2="520" y2="609" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M402 565 H250 V512 H238" class="arrow" marker-end="url(#arrow)"/>
+  <text x="276" y="500" text-anchor="middle" class="tiny">Riot Data</text>
+  <path d="M804 565 H910 V509 H947" class="arrow" marker-end="url(#arrow)"/>
+  <text x="885" y="498" text-anchor="middle" class="tiny">File Upload</text>
+  <path d="M254 648 H330 V430 H512" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M992 608 V430 H688" class="arrow" marker-end="url(#arrow)"/>
+  <text x="918" y="418" text-anchor="middle" class="tiny">Metrics / Load Test</text>
+  <text x="600" y="348" text-anchor="middle" class="tiny">REST API</text>
+</svg>
