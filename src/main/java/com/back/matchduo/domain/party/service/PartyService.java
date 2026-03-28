@@ -23,9 +23,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +44,7 @@ public class PartyService {
                 .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
 
         // 2. 파티에 속한 모든 멤버 조회
-        List<PartyMember> allMembers = partyMemberRepository.findByPartyId(party.getId());
+        List<PartyMember> allMembers = partyMemberRepository.findAllByPartyIdWithUser(party.getId());
 
         // 3. 현재 유저의 참여 여부 확인
         boolean isJoined = false;
@@ -113,8 +112,11 @@ public class PartyService {
     // 파티원 추가
     @Transactional
     public List<PartyMemberAddResponse> addMembers(Long partyId, Long currentUserId, PartyMemberAddRequest request) {
-        Party party = partyRepository.findById(partyId)
+        Party party = partyRepository.findByIdForUpdate(partyId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
+
+        Post post = postRepository.findById(party.getPostId())
+                .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
 
         if (!party.getLeaderId().equals(currentUserId)) {
             throw new CustomException(CustomErrorCode.NOT_PARTY_LEADER);
@@ -178,9 +180,6 @@ public class PartyService {
         }
 
         int currentCount = partyMemberRepository.countByPartyIdAndState(partyId, PartyMemberState.JOINED);
-
-        Post post = postRepository.findById(party.getPostId())
-                .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
 
         if (currentCount >= post.getRecruitCount()) {
             if (party.getStatus() == PartyStatus.RECRUIT) {
@@ -299,7 +298,7 @@ public class PartyService {
                 .map(pm -> pm.getParty().getPostId())
                 .toList();
 
-        Map<Long, Post> postMap = postRepository.findAllById(postIds).stream()
+        Map<Long, Post> postMap = postRepository.findAllByIdInWithGameMode(postIds).stream()
                 .collect(Collectors.toMap(Post::getId, post -> post));
 
         List<MyPartyListResponse.MyPartyDto> partyDtos = myMemberships.stream()

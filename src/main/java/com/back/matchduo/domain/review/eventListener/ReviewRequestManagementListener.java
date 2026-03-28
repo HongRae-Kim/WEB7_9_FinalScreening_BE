@@ -58,7 +58,7 @@ public class ReviewRequestManagementListener {
                 .orElseThrow(() -> new EntityNotFoundException("파티를 찾을 수 없습니다."));
 
         // 파티원 조회
-        List<PartyMember> members = partyMemberRepository.findAllByPartyId(partyId);
+        List<PartyMember> members = partyMemberRepository.findAllByPartyIdWithUser(partyId);
 
         List<ReviewRequest> requests = members.stream()
             .map(member -> ReviewRequest.builder()

@@ -35,6 +35,13 @@ public interface PartyMemberRepository extends JpaRepository<PartyMember, Long> 
     @Query("SELECT pm FROM PartyMember pm JOIN FETCH pm.user WHERE pm.party.id = :partyId AND pm.state = 'JOINED'")
     List<PartyMember> findActiveMembersByPartyId(@Param("partyId") Long partyId);
 
+    @Query("""
+            SELECT pm FROM PartyMember pm 
+            JOIN FETCH pm.user 
+            WHERE pm.party.id = :partyId
+            """)
+    List<PartyMember> findAllByPartyIdWithUser(@Param("partyId") Long partyId);
+
     // 내 파티 목록 조회 (Party 정보까지 Fetch Join)
     // 최신순(joinedAt 내림차순)으로 정렬
     @Query("SELECT pm FROM PartyMember pm JOIN FETCH pm.party WHERE pm.user.id = :userId ORDER BY pm.joinedAt DESC")
