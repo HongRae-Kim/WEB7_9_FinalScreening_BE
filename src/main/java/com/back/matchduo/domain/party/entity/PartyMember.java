@@ -20,6 +20,9 @@ import java.time.LocalDateTime;
                         name = "uk_party_member_user",
                         columnNames = {"party_id", "user_id"}
                 )
+        },
+        indexes = {
+                @Index(name = "idx_party_member_party_state", columnList = "party_id, state")
         }
 )
 public class PartyMember {
