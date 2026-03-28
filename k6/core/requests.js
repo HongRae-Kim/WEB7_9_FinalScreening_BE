@@ -36,6 +36,10 @@ export function runPostJson({
         ensureAuthenticated();
     }
 
+    const responseCallback = allowedStatuses?.length
+        ? http.expectedStatuses(...allowedStatuses)
+        : null;
+
     const res = http.post(
         url,
         JSON.stringify(body),
@@ -45,6 +49,7 @@ export function runPostJson({
                 Cookie: authedParams().headers.Cookie,
             },
             tags: { endpoint },
+            ...(responseCallback ? { responseCallback } : {}),
         },
     );
 
