@@ -223,17 +223,6 @@ public class ChatRoomService {
         return new ChatRoomDetailWithGameAccount(room, otherGameAccount);
     }
 
-    /**
-     * 헬퍼 메서드
-     */
-    private ChatRoom getRoomOrThrow(Long chatRoomId) {
-        if (chatRoomId == null) {
-            throw new CustomException(CustomErrorCode.CHAT_INVALID_CHAT_ROOM);
-        }
-        return chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new CustomException(CustomErrorCode.CHAT_ROOM_NOT_FOUND));
-    }
-
     /** 채팅방 상세 조회 (sender, receiver, post 함께 로드) */
     private ChatRoom getRoomWithDetailsOrThrow(Long chatRoomId) {
         if (chatRoomId == null) {
