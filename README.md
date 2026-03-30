@@ -19,6 +19,17 @@
 
 ---
 
+## Key Achievements
+
+- `auth_login`의 refresh token 저장 경로를 `MySQL -> Redis`로 전환해 write latency를 `2~5ms`에서 `0.003~0.016ms`로 줄였습니다.
+- `party_add_members`는 배치 조회 및 `saveAll()` 구조로 개선한 뒤 `p95 54.50ms -> 24.44ms`로 약 `55.2%` 개선했습니다.
+- 최신 `mixed_stress_rerun` 기준으로 `141.02 req/s`, 전체 `p95 14.61ms`, 실패율 `0%`를 기록했습니다.
+- `party` write 경로에 `findByIdForUpdate()`를 적용해 성능 개선 이후 드러난 정합성 이슈까지 함께 보강했습니다.
+
+![혼합 시나리오 스트레스 테스트 대시보드](docs/mixed_stress_rerun.png)
+
+---
+
 ## 개발 기간 & 팀원
 
 **개발 기간** : 2025.12.10 (수) ~ 2026.01.07 (수)
@@ -52,6 +63,7 @@
 - 초기 병목 후보였던 `auth_login`의 refresh token 저장 경로를 `MySQL -> Redis`로 전환해 DB write 비용을 제거했습니다.
 - `upsertRefreshToken`: `2~5ms` → `0.003 ~ 0.016ms`
 - 인증 API의 남은 주요 비용은 `BCrypt` 비밀번호 검증 구간이며, 보안 수준을 유지하기 위해 Cost Factor는 유지한 채 목표 성능을 `p95 < 700ms`로 관리했습니다.
+- Redis 도입은 저장소 운영 포인트와 만료 정책 관리 비용이 추가되지만, refresh token처럼 짧은 인증 상태에 한정해 사용하고 비즈니스 정합성의 source of truth는 MySQL에 두는 방식으로 trade-off를 관리했습니다.
 
 ### 2. 파티 초대 쓰기 로직 개선
 - 기존에는 N명의 멤버를 초대할 때 대상별 가입 여부 조회와 유저 조회 및 저장이 반복되어 요청당 쿼리 수와 네트워크 라운드 트립이 증가하는 구조였습니다.
@@ -119,8 +131,6 @@
 > `mixed` 시나리오에서 발생한 `dropped_iterations`는 실패 요청이 아니라, 로컬 환경에서 목표 도착률을 순간적으로 모두 소화하지 못한 현상으로 해석했습니다. k6 generator 자원, 애플리케이션 스레드 풀, DB connection pool 경합 가능성을 함께 고려했습니다.
 
 > `party_add_members` 전용 stress 테스트는 동일 파티/대상 유저 조합을 반복 호출하므로, 결과는 success-only insert latency보다 `handled write-path latency`와 안정성 검증에 가깝게 해석했습니다.
-
-![혼합 시나리오 스트레스 테스트 대시보드](docs/mixed_stress_rerun.png)
 
 상세 내용: [부하테스트 및 병목 개선 보고서](load-test/README.md)
 </details>
