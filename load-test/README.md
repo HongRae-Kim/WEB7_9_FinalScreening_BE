@@ -181,7 +181,7 @@ Grafana 이미지는 같은 `run_id`의 스냅샷으로 첨부했으며, 상단 
 - `auth_login`이 가장 무거운 API였지만 병목으로 보기 어려운 수준이었다.
 - `party_add_members`도 혼합 시나리오에서 낮은 지연을 유지했다.
 
-![혼합 시나리오 부하 테스트 대시보드](docs/mixed_high_rerun.png)
+![혼합 시나리오 부하 테스트 대시보드](../docs/mixed_high_rerun.png)
 
 캡션:
 - `mixed_high_rerun` Grafana 대시보드 스냅샷
@@ -201,7 +201,7 @@ Grafana 이미지는 같은 `run_id`의 스냅샷으로 첨부했으며, 상단 
 - `dropped_iterations`는 증가했지만, 응답시간과 실패율은 안정적으로 유지됐다.
 - `party_add_members`는 혼합 스트레스 조건에서도 낮은 지연을 유지했다.
 
-![혼합 시나리오 스트레스 테스트 대시보드](docs/mixed_stress_rerun.png)
+![혼합 시나리오 스트레스 테스트 대시보드](../docs/mixed_stress_rerun.png)
 
 캡션:
 - `mixed_stress_rerun` Grafana 대시보드 스냅샷
@@ -220,7 +220,7 @@ Grafana 이미지는 같은 `run_id`의 스냅샷으로 첨부했으며, 상단 
 - 현재 시나리오는 동일 파티와 동일 초대 대상을 반복 호출하는 구조이므로, 본 결과는 success-only insert latency보다 `write-path handled latency`와 안정성 검증에 가깝게 해석해야 한다.
 - 대시보드에 보이는 `400` 응답은 시스템 실패가 아니라 기대된 handled business response다.
 
-![party_add_members 전용 스트레스 테스트 대시보드](docs/party_write_stress_rerun.png)
+![party_add_members 전용 스트레스 테스트 대시보드](../docs/party_write_stress_rerun.png)
 
 캡션:
 - `party_write_stress_rerun` Grafana 대시보드 스냅샷 (`scenario=party_add_members_write`, `endpoint=party_add_members`)

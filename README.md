@@ -120,7 +120,7 @@
 
 > `party_add_members` 전용 stress 테스트는 동일 파티/대상 유저 조합을 반복 호출하므로, 결과는 success-only insert latency보다 `handled write-path latency`와 안정성 검증에 가깝게 해석했습니다.
 
-![혼합 시나리오 스트레스 테스트 대시보드](/docs/mixed_stress_rerun.png)
+![혼합 시나리오 스트레스 테스트 대시보드](docs/mixed_stress_rerun.png)
 
 상세 내용: [부하테스트 및 병목 개선 보고서](load-test/README.md)
 </details>
