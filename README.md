@@ -46,38 +46,81 @@
 ## 기여한 내용
 
 <details>
-<summary>팀 프로젝트를 기반으로 fork 후 부하테스트를 단계별로 진행하면서 발생된 병목현상에 대해 개선했습니다.</summary>
+<summary>팀 프로젝트를 기반으로 fork 후 부하테스트를 단계별로 진행하면서 발생한 병목현상을 개선했습니다.</summary>
 
 ### 1. 인증 로직 개선
-- 기존 DB upsert 방식의 refresh token을 Redis에 저장하는 방식으로 변경, DB write 비용 제거
-- `upsertRefreshToken`: 2~5ms → 0.003 ~ 0.016ms
+- 초기 병목 후보였던 `auth_login`의 refresh token 저장 경로를 `MySQL -> Redis`로 전환해 DB write 비용을 제거했습니다.
+- `upsertRefreshToken`: `2~5ms` → `0.003 ~ 0.016ms`
+- 인증 API의 남은 주요 비용은 `BCrypt` 비밀번호 검증 구간이며, 보안 수준을 유지하기 위해 Cost Factor는 유지한 채 목표 성능을 `p95 < 700ms`로 관리했습니다.
 
 ### 2. 파티 초대 쓰기 로직 개선
-- `party_add_members`에서 대상 유저별 개별 조회/저장 → 배치 조회 + `saveAll()` 구조로 변경
-- `party_add_members p95`: 54.50ms → 20.01ms
+- 기존에는 N명의 멤버를 초대할 때 대상별 가입 여부 조회와 유저 조회 및 저장이 반복되어 요청당 쿼리 수와 네트워크 라운드 트립이 증가하는 구조였습니다.
+- 이를 `findAllByPartyIdAndUserIdIn(...)`, `userRepository.findAllById(...)`, `saveAll(...)` 기반의 배치 처리 구조로 변경했습니다.
+- `party_add_members p95`: `54.50ms` → `24.44ms` (`mixed_run6` 대비 최신 `mixed_high_rerun` 기준 약 `55.2%` 개선)
+- 전용 stress 테스트(`party_write_stress_rerun`)에서도 `endpoint p95 18.44ms`, 실패율 `0%`를 유지했습니다.
 
-### 3. 성능 테스트 및 병목현상 확인
-- `k6`, `Prometheus`, `Grafana`를 통한 부하테스트 시나리오 구성
-- 단일 API / mixed 테스트로 병목 식별 → 개선 → 동일 조건 재측정으로 효과 검증
+### 3. 추가 발견 이슈 및 2차 수정
+- 기존 병목 개선 이후 `party` 도메인의 write 경로를 재점검하면서, 파티 상태 변경과 멤버 변경이 동시에 발생할 때 정합성이 흔들릴 수 있는 지점을 확인했습니다.
+- 이에 따라 `addMembers`, `removeMember`, `closeParty`, `leaveParty`에서 파티 조회를 `findByIdForUpdate()` 기반으로 통일해 동시성 제어를 보강했습니다.
+- 이 수정은 단순 성능 최적화보다 고부하 환경에서 상태 전이와 멤버 변경의 일관성을 보장하기 위한 안정성 강화 작업에 가깝습니다.
 
-### 4. 테스트 환경 수정
-- 테스트 프로필을 H2 기반으로 수정해 외부 의존성 없이 로컬 테스트 가능
-- Redis 저장소는 Testcontainers 기반 통합 테스트로 분리
+### 4. 성능 테스트 및 병목 확인
+- `k6`, `Prometheus`, `Grafana`를 통해 단일 API / 혼합 시나리오 / 전용 stress 테스트를 구성했습니다.
+- 병목 식별 → 개선 → 동일 계열 재측정으로 효과를 검증했습니다.
+- 테스트는 최종적으로 `localhost:8080` 기준 host 직접 실행 방식으로 통일했습니다.
 
-### 최종 성능 (mixed_run8, stress 프로필)
+### 5. 테스트 환경 정리
+- 테스트 프로필을 H2 기반으로 수정해 외부 의존성 없이 로컬 테스트가 가능하도록 구성했습니다.
+- Redis 저장소는 Testcontainers 기반 통합 테스트로 분리했습니다.
 
-| Endpoint | avg | p95 | Threshold | 결과 |
-|----------|----:|----:|-----------|------|
-| posts_list | 6.91ms | 19.02ms | p95 < 800ms | PASS |
-| auth_login | 89.30ms | 130.03ms | p95 < 700ms | PASS |
-| chat_rooms | 8.94ms | 20.66ms | p95 < 900ms | PASS |
-| chat_messages | 6.77ms | 15.11ms | p95 < 1000ms | PASS |
-| party_members | 6.10ms | 13.99ms | p95 < 800ms | PASS |
-| party_add_members | 12.51ms | 20.01ms | p95 < 1200ms | PASS |
+### 최신 재측정 결과 요약
 
-> 총 41,570 요청 / 171.2 req/s / 실패율 0.06% / **전체 Threshold PASS**
+#### 단일 API 재측정
+| Endpoint | avg | p95 | 결과 |
+|----------|----:|----:|------|
+| auth_login | 92.80ms | 112.42ms | PASS |
+| posts_list | 9.69ms | 18.50ms | PASS |
+| chat_rooms | 20.76ms | 29.12ms | PASS |
+| chat_messages | 11.61ms | 20.01ms | PASS |
+| party_members | 15.80ms | 23.77ms | PASS |
 
-![mixed endpoint p95 비교](load-test/images/mixed-endpoint-p95-run6-vs-run8.svg)
+#### 혼합 시나리오 부하 테스트 (`mixed_high_rerun`)
+| 지표 | 값 |
+|------|---:|
+| 처리량 | 70.92 req/s |
+| 전체 avg | 11.80ms |
+| 전체 p95 | 21.38ms |
+| auth_login p95 | 138.46ms |
+| party_add_members p95 | 24.44ms |
+| 실패율 | 0% |
+| dropped_iterations | 55 |
+
+#### 혼합 시나리오 스트레스 테스트 (`mixed_stress_rerun`)
+| 지표 | 값 |
+|------|---:|
+| 처리량 | 141.02 req/s |
+| 전체 avg | 7.14ms |
+| 전체 p95 | 14.61ms |
+| auth_login p95 | 108.80ms |
+| party_add_members p95 | 12.46ms |
+| 실패율 | 0% |
+| dropped_iterations | 100 |
+
+#### `party_add_members` 전용 스트레스 테스트 (`party_write_stress_rerun`)
+| 지표 | 값 |
+|------|---:|
+| 처리량 | 53.73 req/s |
+| endpoint avg | 13.30ms |
+| endpoint p95 | 18.44ms |
+| scenario p95 | 21.08ms |
+| 실패율 | 0% |
+| iterations | 4800 |
+
+> `mixed` 시나리오에서 발생한 `dropped_iterations`는 실패 요청이 아니라, 로컬 환경에서 목표 도착률을 순간적으로 모두 소화하지 못한 현상으로 해석했습니다. k6 generator 자원, 애플리케이션 스레드 풀, DB connection pool 경합 가능성을 함께 고려했습니다.
+
+> `party_add_members` 전용 stress 테스트는 동일 파티/대상 유저 조합을 반복 호출하므로, 결과는 success-only insert latency보다 `handled write-path latency`와 안정성 검증에 가깝게 해석했습니다.
+
+![혼합 시나리오 스트레스 테스트 대시보드](/docs/mixed_stress_rerun.png)
 
 상세 내용: [부하테스트 및 병목 개선 보고서](load-test/README.md)
 </details>
@@ -124,7 +167,7 @@
 
 ## 아키텍처
 
-프런트엔드는 Vercel에 배포된 Next.js 애플리케이션이고, 백엔드는 AWS EC2 내부 Docker 런타임에서 Spring Boot API, MySQL, Redis를 함께 운영합니다.  
+프론트엔드는 Vercel에 배포된 Next.js 애플리케이션이고, 백엔드는 AWS EC2 내부 Docker 런타임에서 Spring Boot API, MySQL, Redis를 함께 운영합니다.  
 Reverse Proxy를 통해 REST API와 WebSocket/STOMP 요청을 전달하고, Riot API와 S3를 외부 서비스로 연동합니다.  
 인프라는 Terraform으로 관리하고, k6, Prometheus, Grafana로 부하테스트와 모니터링을 구성했습니다.
 
@@ -134,7 +177,7 @@ Reverse Proxy를 통해 REST API와 WebSocket/STOMP 요청을 전달하고, Riot
 
 ## ERD
 
-![ERD](docs/Untitled.png)
+![ERD](docs/erd.png)
 
 ---
 
@@ -253,4 +296,3 @@ docker compose up -d
 | `init` | 초기 생성 |
 
 </details>
-
