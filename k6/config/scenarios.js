@@ -85,9 +85,9 @@ const BASE_SCENARIO_CONFIG = {
     party_add_members_write: {
         executor: 'per-vu-iterations',
         exec: 'partyAddMembersWrite',
-        vus: 10,
-        iterations: 20,
-        maxDuration: '1m',
+        vus: 30,
+        iterations: 80,
+        maxDuration: '4m',
         tags: { area: 'party', kind: 'write-contention' },
     },
 };

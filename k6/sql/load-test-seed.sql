@@ -181,6 +181,50 @@ SELECT @now, @now, NULL, b'1',
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM post WHERE memo = 'LOADTEST_POST_08');
 
+INSERT INTO post (
+    created_at, updated_at, deleted_at, is_active,
+    game_mode, looking_positions, memo, mic, my_position, queue_type, recruit_count, status,
+    game_account_id, user_id
+)
+SELECT @now, @now, NULL, b'1',
+       'SUMMONERS_RIFT', JSON_ARRAY('JUNGLE', 'MID'), 'LOADTEST_POST_09',
+       b'1', 'TOP', 'DUO', 3, 'RECRUIT', @ga_main, @user_main
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM post WHERE memo = 'LOADTEST_POST_09');
+
+INSERT INTO post (
+    created_at, updated_at, deleted_at, is_active,
+    game_mode, looking_positions, memo, mic, my_position, queue_type, recruit_count, status,
+    game_account_id, user_id
+)
+SELECT @now, @now, NULL, b'1',
+       'SUMMONERS_RIFT', JSON_ARRAY('ADC', 'SUPPORT'), 'LOADTEST_POST_10',
+       b'1', 'MID', 'DUO', 3, 'RECRUIT', @ga_main, @user_main
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM post WHERE memo = 'LOADTEST_POST_10');
+
+INSERT INTO post (
+    created_at, updated_at, deleted_at, is_active,
+    game_mode, looking_positions, memo, mic, my_position, queue_type, recruit_count, status,
+    game_account_id, user_id
+)
+SELECT @now, @now, NULL, b'1',
+       'SUMMONERS_RIFT', JSON_ARRAY('TOP', 'MID'), 'LOADTEST_POST_11',
+       b'0', 'JUNGLE', 'DUO', 3, 'RECRUIT', @ga_main, @user_main
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM post WHERE memo = 'LOADTEST_POST_11');
+
+INSERT INTO post (
+    created_at, updated_at, deleted_at, is_active,
+    game_mode, looking_positions, memo, mic, my_position, queue_type, recruit_count, status,
+    game_account_id, user_id
+)
+SELECT @now, @now, NULL, b'1',
+       'SUMMONERS_RIFT', JSON_ARRAY('MID', 'SUPPORT'), 'LOADTEST_POST_12',
+       b'1', 'ADC', 'DUO', 3, 'RECRUIT', @ga_main, @user_main
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM post WHERE memo = 'LOADTEST_POST_12');
+
 SET @post_1 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_01' LIMIT 1);
 SET @post_2 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_02' LIMIT 1);
 SET @post_3 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_03' LIMIT 1);
@@ -189,6 +233,10 @@ SET @post_5 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_05' LIMIT 1)
 SET @post_6 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_06' LIMIT 1);
 SET @post_7 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_07' LIMIT 1);
 SET @post_8 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_08' LIMIT 1);
+SET @post_9 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_09' LIMIT 1);
+SET @post_10 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_10' LIMIT 1);
+SET @post_11 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_11' LIMIT 1);
+SET @post_12 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_12' LIMIT 1);
 
 -- 4) Parties and leader memberships (mirrors post creation flow)
 INSERT INTO party (
@@ -223,10 +271,46 @@ SELECT @now, @now, NULL, b'1', NULL, NULL, @user_4, @post_4, 'RECRUIT'
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_4);
 
+INSERT INTO party (
+    created_at, updated_at, deleted_at, is_active,
+    closed_at, expires_at, leader_id, post_id, status
+)
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_9, 'RECRUIT'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_9);
+
+INSERT INTO party (
+    created_at, updated_at, deleted_at, is_active,
+    closed_at, expires_at, leader_id, post_id, status
+)
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_10, 'RECRUIT'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_10);
+
+INSERT INTO party (
+    created_at, updated_at, deleted_at, is_active,
+    closed_at, expires_at, leader_id, post_id, status
+)
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_11, 'RECRUIT'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_11);
+
+INSERT INTO party (
+    created_at, updated_at, deleted_at, is_active,
+    closed_at, expires_at, leader_id, post_id, status
+)
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_12, 'RECRUIT'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_12);
+
 SET @party_1 = (SELECT party_id FROM party WHERE post_id = @post_1 LIMIT 1);
 SET @party_2 = (SELECT party_id FROM party WHERE post_id = @post_2 LIMIT 1);
 SET @party_3 = (SELECT party_id FROM party WHERE post_id = @post_3 LIMIT 1);
 SET @party_4 = (SELECT party_id FROM party WHERE post_id = @post_4 LIMIT 1);
+SET @party_9 = (SELECT party_id FROM party WHERE post_id = @post_9 LIMIT 1);
+SET @party_10 = (SELECT party_id FROM party WHERE post_id = @post_10 LIMIT 1);
+SET @party_11 = (SELECT party_id FROM party WHERE post_id = @post_11 LIMIT 1);
+SET @party_12 = (SELECT party_id FROM party WHERE post_id = @post_12 LIMIT 1);
 
 INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
 SELECT @now, NULL, 'LEADER', 'JOINED', @party_1, @user_main
@@ -247,6 +331,26 @@ INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
 SELECT @now, NULL, 'LEADER', 'JOINED', @party_4, @user_4
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party_member WHERE party_id = @party_4 AND user_id = @user_4);
+
+INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
+SELECT @now, NULL, 'LEADER', 'JOINED', @party_9, @user_main
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM party_member WHERE party_id = @party_9 AND user_id = @user_main);
+
+INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
+SELECT @now, NULL, 'LEADER', 'JOINED', @party_10, @user_main
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM party_member WHERE party_id = @party_10 AND user_id = @user_main);
+
+INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
+SELECT @now, NULL, 'LEADER', 'JOINED', @party_11, @user_main
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM party_member WHERE party_id = @party_11 AND user_id = @user_main);
+
+INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
+SELECT @now, NULL, 'LEADER', 'JOINED', @party_12, @user_main
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM party_member WHERE party_id = @party_12 AND user_id = @user_main);
 
 -- Additional members for the main user's party to support party-member reads.
 INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
