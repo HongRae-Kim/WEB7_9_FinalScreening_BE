@@ -2,11 +2,11 @@ package com.back.matchduo.domain.party.repository;
 
 import com.back.matchduo.domain.party.entity.Party;
 import com.back.matchduo.domain.party.entity.PartyStatus;
-import io.lettuce.core.dynamic.annotation.Param;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;

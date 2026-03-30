@@ -208,7 +208,7 @@ public class PartyService {
     // 파티원 제외 (강퇴)
     @Transactional
     public PartyMemberRemoveResponse removeMember(Long partyId, Long partyMemberId, Long currentUserId) {
-        Party party = partyRepository.findById(partyId)
+        Party party = partyRepository.findByIdForUpdate(partyId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
 
         if (!party.getLeaderId().equals(currentUserId)) {
@@ -337,7 +337,7 @@ public class PartyService {
     // 파티 상태 수동 종료
     @Transactional
     public PartyCloseResponse closeParty(Long partyId, Long currentUserId) {
-        Party party = partyRepository.findById(partyId)
+        Party party = partyRepository.findByIdForUpdate(partyId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
 
         if (!party.getLeaderId().equals(currentUserId)) {
@@ -373,7 +373,7 @@ public class PartyService {
     @Transactional
     public PartyMemberLeaveResponse leaveParty(Long partyId, Long currentUserId) {
         // 1. 파티 조회
-        Party party = partyRepository.findById(partyId)
+        Party party = partyRepository.findByIdForUpdate(partyId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
 
         // 2. 파티장은 탈퇴 불가 (파티 종료를 이용해야 함)
