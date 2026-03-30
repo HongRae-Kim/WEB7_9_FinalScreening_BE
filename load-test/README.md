@@ -112,10 +112,10 @@ Grafana 이미지는 같은 `run_id`의 스냅샷으로 첨부했으며, 상단 
 | `party_members` | `party_members_high_rerun` | 35.19 | 15.80ms | 23.77ms | 0% |
 
 ### 5.2 혼합 시나리오 재측정 결과
-| 조건 | Run ID | TPS(req/s) | 전체 avg | 전체 p95 | auth p95 | party_add_members p95 | 실패율 | dropped_iterations |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 혼합 시나리오 부하 테스트 | `mixed_high_rerun` | 70.92 | 11.80ms | 21.38ms | 138.46ms | 24.44ms | 0% | 55 |
-| 혼합 시나리오 스트레스 테스트 | `mixed_stress_rerun` | 141.02 | 7.14ms | 14.61ms | 108.80ms | 12.46ms | 0% | 100 |
+| 프로필 | TPS(req/s) | 전체 avg | 전체 p95 | auth p95 | party_add_members p95 | 실패율 | dropped_iterations |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `high` | 70.92 | 11.80ms | 21.38ms | 138.46ms | 24.44ms | 0% | 55 |
+| `stress` | 141.02 | 7.14ms | 14.61ms | 108.80ms | 12.46ms | 0% | 100 |
 
 ### 5.3 `party_add_members` 전용 스트레스 결과
 | 조건 | Run ID | TPS(req/s) | endpoint avg | endpoint p95 | scenario p95 | 실패율 | iterations |
