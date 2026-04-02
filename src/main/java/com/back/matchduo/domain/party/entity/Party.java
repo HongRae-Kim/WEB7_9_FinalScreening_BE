@@ -25,6 +25,12 @@ public class Party extends BaseEntity {
     @Column(name = "leader_id", nullable = false)
     private Long leaderId;
 
+    @Column(name = "capacity", nullable = false)
+    private Integer capacity;
+
+    @Column(name = "joined_member_count", nullable = false)
+    private Integer joinedMemberCount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PartyStatus status;
@@ -40,12 +46,14 @@ public class Party extends BaseEntity {
 
 
     // 파티 초기 상태
-    public Party(Long postId, Long leaderId) {
+    public Party(Long postId, Long leaderId, int capacity) {
         this.postId = postId;
         this.leaderId = leaderId;
+        this.capacity = capacity;
+        this.joinedMemberCount = 1; // leader 포함
         this.status = PartyStatus.RECRUIT;
         this.expiresAt = null;
-        }
+    }
 
     // 모집 완료 -> ACTIVE 전환
     public void activateParty(LocalDateTime expiresAt) {
@@ -75,5 +83,25 @@ public class Party extends BaseEntity {
             this.status = PartyStatus.CLOSED;
             this.closedAt = this.expiresAt;
         }
+    }
+
+    public boolean canAccept(int additionalMembers) {
+        return this.joinedMemberCount + additionalMembers <= this.capacity;
+    }
+
+    public void updateCapacity(int capacity) {
+        this.capacity = capacity;
+    }
+
+    public void increaseJoinedMemberCount(int count) {
+        this.joinedMemberCount += count;
+    }
+
+    public void decreaseJoinedMemberCount(int count) {
+        this.joinedMemberCount = Math.max(1, this.joinedMemberCount - count);
+    }
+
+    public boolean isFull() {
+        return this.joinedMemberCount >= this.capacity;
     }
 }

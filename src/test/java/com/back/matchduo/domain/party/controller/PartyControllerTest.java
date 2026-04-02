@@ -123,14 +123,14 @@ class PartyControllerTest {
                 .myPosition(Position.TOP)
                 .lookingPositions("[\"JUNGLE\"]")
                 .mic(true)
-                .recruitCount(2)
+                .recruitCount(4)
                 .memo("테스트 모집글") // ★ 제목 역할
                 .build();
         postRepository.save(post);
         testPostId = post.getId();
 
         // 6. 파티 생성 (초기 상태: RECRUIT)
-        testParty = new Party(testPostId, leaderUser.getId());
+        testParty = new Party(testPostId, leaderUser.getId(), post.getRecruitCount());
         partyRepository.save(testParty);
 
         // 7. 멤버 추가
@@ -139,6 +139,7 @@ class PartyControllerTest {
 
         normalMember = new PartyMember(testParty, memberUser, PartyMemberRole.MEMBER);
         partyMemberRepository.save(normalMember);
+        testParty.increaseJoinedMemberCount(1);
 
         // 8. 초대 대상 유저 생성 (이미지 없는 경우 테스트)
         targetUser1 = User.builder()
@@ -350,7 +351,7 @@ class PartyControllerTest {
         @DisplayName("실패: 다른 파티의 멤버를 강퇴하려 하면 400 Bad Request")
         void fail_member_mismatch() throws Exception {
             // given
-            Party otherParty = new Party(200L, targetUser1.getId());
+            Party otherParty = new Party(200L, targetUser1.getId(), 2);
             partyRepository.save(otherParty);
 
             // [수정] PartyMember 생성 시 User 객체 전달 (targetUser2)
@@ -458,12 +459,13 @@ class PartyControllerTest {
             postRepository.save(secondPost);
 
             // 3. 두 번째 파티 생성
-            Party secondParty = new Party(secondPost.getId(), targetUser1.getId());
+            Party secondParty = new Party(secondPost.getId(), targetUser1.getId(), secondPost.getRecruitCount());
             partyRepository.save(secondParty);
 
             // 4. leaderUser를 멤버로 가입시킴
             PartyMember secondMemberShip = new PartyMember(secondParty, leaderUser, PartyMemberRole.MEMBER);
             partyMemberRepository.save(secondMemberShip);
+            secondParty.increaseJoinedMemberCount(1);
 
             // when
             ResultActions resultActions = mockMvc.perform(
@@ -476,7 +478,11 @@ class PartyControllerTest {
             resultActions
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.parties[0].postTitle").value("자유랭크 달리실 분"))
+                    .andExpect(jsonPath("$.data.parties[0].gameMode").value("소환사의 협곡"))
+                    .andExpect(jsonPath("$.data.parties[0].queueType").value("FLEX"))
                     .andExpect(jsonPath("$.data.parties[1].postTitle").value("테스트 모집글"))
+                    .andExpect(jsonPath("$.data.parties[1].gameMode").value("소환사의 협곡"))
+                    .andExpect(jsonPath("$.data.parties[1].queueType").value("DUO"))
                     .andDo(print());
         }
 
@@ -561,7 +567,7 @@ class PartyControllerTest {
         void fail_already_closed() throws Exception {
             // given
             // 이 테스트만을 위한 '이미 종료된 파티'를 새로 만듭니다.
-            Party closedParty = new Party(testPostId, leaderUser.getId());
+            Party closedParty = new Party(testPostId, leaderUser.getId(), testParty.getCapacity());
             closedParty.closeParty(); // 강제 종료 설정
             partyRepository.save(closedParty);
 

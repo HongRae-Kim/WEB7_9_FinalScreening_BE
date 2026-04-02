@@ -77,10 +77,11 @@ class PartyServiceTest {
         targetUser = createUserWithId(3L, "target@test.com", "초대대상");
 
         party = createPartyWithId(1L, 100L, 1L);
-        post = createPostWithId(100L, leaderUser, 2);
+        post = createPostWithId(100L, leaderUser, 3);
 
         leaderMember = createPartyMember(1L, party, leaderUser, PartyMemberRole.LEADER);
         normalMember = createPartyMember(2L, party, memberUser, PartyMemberRole.MEMBER);
+        party.increaseJoinedMemberCount(1);
     }
 
     private User createUserWithId(Long id, String email, String nickname) {
@@ -95,7 +96,7 @@ class PartyServiceTest {
     }
 
     private Party createPartyWithId(Long id, Long postId, Long leaderId) {
-        Party party = new Party(postId, leaderId);
+        Party party = new Party(postId, leaderId, 3);
         setId(party, id, Party.class);
         return party;
     }
@@ -140,7 +141,7 @@ class PartyServiceTest {
         void getPartyByPostId_success_loggedIn() {
             // given
             given(partyRepository.findByPostId(100L)).willReturn(Optional.of(party));
-            given(partyMemberRepository.findByPartyId(1L)).willReturn(List.of(leaderMember, normalMember));
+            given(partyMemberRepository.findAllByPartyIdWithUser(1L)).willReturn(List.of(leaderMember, normalMember));
             given(postRepository.findById(100L)).willReturn(Optional.of(post));
 
             // when
@@ -158,7 +159,7 @@ class PartyServiceTest {
         void getPartyByPostId_success_guest() {
             // given
             given(partyRepository.findByPostId(100L)).willReturn(Optional.of(party));
-            given(partyMemberRepository.findByPartyId(1L)).willReturn(List.of(leaderMember, normalMember));
+            given(partyMemberRepository.findAllByPartyIdWithUser(1L)).willReturn(List.of(leaderMember, normalMember));
             given(postRepository.findById(100L)).willReturn(Optional.of(post));
 
             // when
@@ -194,7 +195,7 @@ class PartyServiceTest {
             // given
             PartyMemberAddRequest request = new PartyMemberAddRequest(List.of(3L));
 
-            given(partyRepository.findById(1L)).willReturn(Optional.of(party));
+            given(partyRepository.findByIdForUpdate(1L)).willReturn(Optional.of(party));
             given(partyMemberRepository.findAllByPartyIdAndUserIdIn(1L, List.of(3L))).willReturn(List.of());
             given(userRepository.findAllById(List.of(3L))).willReturn(List.of(targetUser));
             given(partyMemberRepository.saveAll(anyList())).willAnswer(invocation -> {
@@ -204,8 +205,6 @@ class PartyServiceTest {
                 }
                 return members;
             });
-            given(partyMemberRepository.countByPartyIdAndState(1L, PartyMemberState.JOINED)).willReturn(2);
-            given(postRepository.findById(100L)).willReturn(Optional.of(post));
 
             // when
             List<PartyMemberAddResponse> result = partyService.addMembers(1L, 1L, request);
@@ -213,7 +212,10 @@ class PartyServiceTest {
             // then
             assertThat(result).hasSize(1);
             assertThat(result.get(0).userId()).isEqualTo(3L);
+            assertThat(party.getJoinedMemberCount()).isEqualTo(3);
+            assertThat(party.getStatus()).isEqualTo(PartyStatus.ACTIVE);
             verify(partyMemberRepository).saveAll(anyList());
+            verify(postRepository).updateStatusById(100L, com.back.matchduo.domain.post.entity.PostStatus.ACTIVE);
         }
 
         @Test
@@ -221,7 +223,7 @@ class PartyServiceTest {
         void addMembers_fail_not_leader() {
             // given
             PartyMemberAddRequest request = new PartyMemberAddRequest(List.of(3L));
-            given(partyRepository.findById(1L)).willReturn(Optional.of(party));
+            given(partyRepository.findByIdForUpdate(1L)).willReturn(Optional.of(party));
 
             // when & then
             assertThatThrownBy(() -> partyService.addMembers(1L, 2L, request))
@@ -238,7 +240,7 @@ class PartyServiceTest {
             // given
             party.closeParty();
             PartyMemberAddRequest request = new PartyMemberAddRequest(List.of(3L));
-            given(partyRepository.findById(1L)).willReturn(Optional.of(party));
+            given(partyRepository.findByIdForUpdate(1L)).willReturn(Optional.of(party));
 
             // when & then
             assertThatThrownBy(() -> partyService.addMembers(1L, 1L, request))
@@ -258,7 +260,7 @@ class PartyServiceTest {
         @DisplayName("성공: 파티장이 멤버 강퇴")
         void removeMember_success() {
             // given
-            given(partyRepository.findById(1L)).willReturn(Optional.of(party));
+            given(partyRepository.findByIdForUpdate(1L)).willReturn(Optional.of(party));
             given(partyMemberRepository.findById(2L)).willReturn(Optional.of(normalMember));
 
             // when
@@ -268,13 +270,14 @@ class PartyServiceTest {
             assertThat(result.partyMemberId()).isEqualTo(2L);
             // leaveParty() 호출 후 상태가 LEFT로 변경됨
             assertThat(normalMember.getState()).isEqualTo(PartyMemberState.LEFT);
+            assertThat(party.getJoinedMemberCount()).isEqualTo(1);
         }
 
         @Test
         @DisplayName("실패: 파티장이 아닌 유저가 강퇴 시도")
         void removeMember_fail_not_leader() {
             // given
-            given(partyRepository.findById(1L)).willReturn(Optional.of(party));
+            given(partyRepository.findByIdForUpdate(1L)).willReturn(Optional.of(party));
 
             // when & then
             assertThatThrownBy(() -> partyService.removeMember(1L, 2L, 2L))
@@ -289,7 +292,7 @@ class PartyServiceTest {
         @DisplayName("실패: 파티장이 자기 자신 강퇴 시도")
         void removeMember_fail_kick_self() {
             // given
-            given(partyRepository.findById(1L)).willReturn(Optional.of(party));
+            given(partyRepository.findByIdForUpdate(1L)).willReturn(Optional.of(party));
             given(partyMemberRepository.findById(1L)).willReturn(Optional.of(leaderMember));
 
             // when & then
@@ -310,8 +313,7 @@ class PartyServiceTest {
         @DisplayName("성공: 파티장이 파티 종료")
         void closeParty_success() {
             // given
-            given(partyRepository.findById(1L)).willReturn(Optional.of(party));
-            given(postRepository.findById(100L)).willReturn(Optional.of(post));
+            given(partyRepository.findByIdForUpdate(1L)).willReturn(Optional.of(party));
 
             // when
             PartyCloseResponse result = partyService.closeParty(1L, 1L);
@@ -321,13 +323,14 @@ class PartyServiceTest {
             assertThat(result.status()).isEqualTo("CLOSED");
             assertThat(result.closedAt()).isNotNull();
             verify(eventPublisher).publishEvent(any(Object.class));
+            verify(postRepository).updateStatusById(100L, com.back.matchduo.domain.post.entity.PostStatus.CLOSED);
         }
 
         @Test
         @DisplayName("실패: 파티장이 아닌 유저가 종료 시도")
         void closeParty_fail_not_leader() {
             // given
-            given(partyRepository.findById(1L)).willReturn(Optional.of(party));
+            given(partyRepository.findByIdForUpdate(1L)).willReturn(Optional.of(party));
 
             // when & then
             assertThatThrownBy(() -> partyService.closeParty(1L, 2L))
@@ -343,7 +346,7 @@ class PartyServiceTest {
         void closeParty_fail_already_closed() {
             // given
             party.closeParty();
-            given(partyRepository.findById(1L)).willReturn(Optional.of(party));
+            given(partyRepository.findByIdForUpdate(1L)).willReturn(Optional.of(party));
 
             // when & then
             assertThatThrownBy(() -> partyService.closeParty(1L, 1L))

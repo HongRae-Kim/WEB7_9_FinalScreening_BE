@@ -109,7 +109,7 @@ class PostControllerTest {
         postRepository.save(recruitPost);
 
         // RECRUIT 파티 생성
-        Party recruitParty = new Party(recruitPost.getId(), testUser.getId());
+        Party recruitParty = new Party(recruitPost.getId(), testUser.getId(), recruitPost.getRecruitCount());
         partyRepository.save(recruitParty);
         partyMemberRepository.save(new PartyMember(recruitParty, testUser, PartyMemberRole.LEADER));
 
@@ -130,7 +130,8 @@ class PostControllerTest {
         postRepository.save(activePost);
 
         // ACTIVE 파티 생성
-        Party activeParty = new Party(activePost.getId(), testUser.getId());
+        Party activeParty = new Party(activePost.getId(), testUser.getId(), activePost.getRecruitCount());
+        activeParty.increaseJoinedMemberCount(1);
         activeParty.activateParty(java.time.LocalDateTime.now().plusHours(6));
         partyRepository.save(activeParty);
         partyMemberRepository.save(new PartyMember(activeParty, testUser, PartyMemberRole.LEADER));
@@ -153,7 +154,7 @@ class PostControllerTest {
         postRepository.save(closedPost);
 
         // CLOSED 파티 생성
-        Party closedParty = new Party(closedPost.getId(), testUser.getId());
+        Party closedParty = new Party(closedPost.getId(), testUser.getId(), closedPost.getRecruitCount());
         closedParty.closeParty();
         partyRepository.save(closedParty);
     }

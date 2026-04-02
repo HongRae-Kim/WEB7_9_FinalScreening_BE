@@ -115,9 +115,6 @@ public class PartyService {
         Party party = partyRepository.findByIdForUpdate(partyId)
                 .orElseThrow(() -> new CustomException(CustomErrorCode.PARTY_NOT_FOUND));
 
-        Post post = postRepository.findById(party.getPostId())
-                .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
-
         if (!party.getLeaderId().equals(currentUserId)) {
             throw new CustomException(CustomErrorCode.NOT_PARTY_LEADER);
         }
@@ -126,38 +123,41 @@ public class PartyService {
             throw new CustomException(CustomErrorCode.PARTY_ALREADY_CLOSED);
         }
 
-        List<Long> targetUserIds = request.targetUserIds().stream()
-                .distinct()
-                .toList();
-
+        List<Long> targetUserIds = request.targetUserIds().stream().distinct().toList();
         if (targetUserIds.isEmpty()) {
             return List.of();
         }
 
         List<PartyMember> existingMembers = partyMemberRepository.findAllByPartyIdAndUserIdIn(partyId, targetUserIds);
-        Map<Long, PartyMember> existingByUserId = existingMembers.stream()
-                .collect(Collectors.toMap(pm -> pm.getUser().getId(), Function.identity()));
-
         boolean alreadyJoined = existingMembers.stream()
                 .anyMatch(pm -> pm.getState() == PartyMemberState.JOINED);
         if (alreadyJoined) {
             throw new CustomException(CustomErrorCode.PARTY_ALREADY_JOINED);
         }
 
-        List<Long> newUserIds = targetUserIds.stream()
-                .filter(userId -> !existingByUserId.containsKey(userId))
-                .toList();
+        Map<Long, PartyMember> existingByUserId = existingMembers.stream()
+                .collect(Collectors.toMap(pm -> pm.getUser().getId(), Function.identity()));
 
-        List<User> targetUsers = userRepository.findAllById(newUserIds);
-        if (targetUsers.size() != newUserIds.size()) {
+        List<User> targetUsers = userRepository.findAllById(targetUserIds);
+        if (targetUsers.size() != targetUserIds.size()) {
             throw new CustomException(CustomErrorCode.NOT_FOUND_USER);
         }
 
         Map<Long, User> userById = targetUsers.stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
+        List<Long> newUserIds = targetUserIds.stream()
+                .filter(userId -> !existingByUserId.containsKey(userId))
+                .toList();
+
         for (PartyMember existingMember : existingMembers) {
             existingMember.rejoinParty();
+        }
+
+        int rejoinCount = existingMembers.size();
+        int additionalCount = rejoinCount + newUserIds.size();
+        if (!party.canAccept(additionalCount)) {
+            throw new CustomException(CustomErrorCode.PARTY_IS_FULL);
         }
 
         List<PartyMember> newMembers = new ArrayList<>();
@@ -176,12 +176,12 @@ public class PartyService {
         List<PartyMemberAddResponse> responses = new ArrayList<>();
         for (Long targetUserId : targetUserIds) {
             PartyMember member = existingByUserId.getOrDefault(targetUserId, newMemberByUserId.get(targetUserId));
-            responses.add(createAddResponse(member));
+            responses.add(createAddResponse(member, userById.get(targetUserId)));
         }
 
-        int currentCount = partyMemberRepository.countByPartyIdAndState(partyId, PartyMemberState.JOINED);
+        party.increaseJoinedMemberCount(additionalCount);
 
-        if (currentCount >= post.getRecruitCount()) {
+        if (party.isFull()) {
             if (party.getStatus() == PartyStatus.RECRUIT) {
                 PartyStatus prevStatus = party.getStatus();
                 party.activateParty(LocalDateTime.now().plusHours(6));
@@ -191,14 +191,13 @@ public class PartyService {
                 ));
             }
 
-            post.updateStatus(PostStatus.ACTIVE);
+            postRepository.updateStatusById(party.getPostId(), PostStatus.ACTIVE);
         }
 
         return responses;
     }
 
-    private PartyMemberAddResponse createAddResponse(PartyMember member) {
-        User user = member.getUser();
+    private PartyMemberAddResponse createAddResponse(PartyMember member, User user) {
         String nickname = user.getNickname();
         String profileImage = user.getProfileImage();
         return PartyMemberAddResponse.of(member, nickname, profileImage);
@@ -228,17 +227,14 @@ public class PartyService {
 
         // 1. 멤버 강퇴 (상태 LEFT)
         member.leaveParty();
+        party.decreaseJoinedMemberCount(1);
 
         // 2. 상태 변경 (ACTIVE -> RECRUIT)
         // 만약 '게임 시작(ACTIVE)' 상태였는데 한 명이 나가면 -> 다시 '모집 중(RECRUIT)'으로 강등
         if (party.getStatus() == PartyStatus.ACTIVE) {
             PartyStatus prevStatus = party.getStatus();
             party.downgradeToRecruit();
-
-            Post post = postRepository.findById(party.getPostId())
-                    .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
-
-            post.updateStatus(PostStatus.RECRUIT);
+            postRepository.updateStatusById(party.getPostId(), PostStatus.RECRUIT);
 
             eventPublisher.publishEvent(new PartyStatusChangedEvent(
                     party.getId(), prevStatus, party.getStatus()
@@ -352,10 +348,7 @@ public class PartyService {
         PartyStatus prevStatus = party.getStatus();
         party.closeParty();
 
-        Post post = postRepository.findById(party.getPostId())
-                .orElseThrow(() -> new CustomException(CustomErrorCode.POST_NOT_FOUND));
-
-        post.updateStatus(PostStatus.CLOSED);
+        postRepository.updateStatusById(party.getPostId(), PostStatus.CLOSED);
 
         eventPublisher.publishEvent(new PartyStatusChangedEvent(
                 party.getId(), prevStatus, party.getStatus()
@@ -392,6 +385,7 @@ public class PartyService {
 
         // 4. 탈퇴 처리 (State -> LEFT)
         member.leaveParty();
+        party.decreaseJoinedMemberCount(1);
 
         // 5. 파티 상태 및 게시글 상태 동기화 (ACTIVE -> RECRUIT)
         // 인원이 꽉 차서 ACTIVE 상태였다가, 한 명이 나가서 자리가 비게 된 경우
@@ -400,8 +394,7 @@ public class PartyService {
             party.downgradeToRecruit(); // 파티 상태 변경
 
             // [중요] 게시글(Post) 상태도 모집 중으로 변경하여 목록에 다시 노출
-            postRepository.findById(party.getPostId())
-                    .ifPresent(post -> post.updateStatus(PostStatus.RECRUIT));
+            postRepository.updateStatusById(party.getPostId(), PostStatus.RECRUIT);
             eventPublisher.publishEvent(new PartyStatusChangedEvent(
                     party.getId(), prevStatus, party.getStatus()
             ));

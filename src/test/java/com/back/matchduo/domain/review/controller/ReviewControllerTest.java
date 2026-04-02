@@ -139,13 +139,14 @@ class ReviewControllerTest {
         postRepository.save(testPost);
 
         // 파티 생성 (CLOSED 상태)
-        testParty = new Party(testPost.getId(), reviewer.getId());
+        testParty = new Party(testPost.getId(), reviewer.getId(), testPost.getRecruitCount());
         testParty.closeParty();
         partyRepository.save(testParty);
 
         // 파티 멤버 추가
         partyMemberRepository.save(new PartyMember(testParty, reviewer, PartyMemberRole.LEADER));
         partyMemberRepository.save(new PartyMember(testParty, reviewee, PartyMemberRole.MEMBER));
+        testParty.increaseJoinedMemberCount(1);
 
         // 리뷰 요청 생성 (COMPLETED - 리뷰 작성 가능)
         completedReviewRequest = ReviewRequest.builder()

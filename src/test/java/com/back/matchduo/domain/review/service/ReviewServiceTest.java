@@ -78,7 +78,7 @@ class ReviewServiceTest {
     }
 
     private Party createPartyWithId(Long id, Long postId, Long leaderId) {
-        Party party = new Party(postId, leaderId);
+        Party party = new Party(postId, leaderId, 2);
         setId(party, id);
         return party;
     }

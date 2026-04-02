@@ -98,7 +98,7 @@ public class PostListFacade {
         Post saved = postRepository.save(post);
 
         // 1. 파티 생성 및 저장
-        Party party = new Party(saved.getId(), userId);
+        Party party = new Party(saved.getId(), userId, saved.getRecruitCount());
         partyRepository.save(party);
 
         PartyMember leader = PartyMember.builder()
@@ -153,9 +153,9 @@ public class PostListFacade {
 
         PartyStatus prevStatus = party.getStatus();
 
-        // 현재 파티원 수 조회 (JOINED 상태만)
-        int currentMemberCount = partyMemberRepository.countByPartyIdAndState(party.getId(), PartyMemberState.JOINED);
-        int newRecruitCount = request.recruitCount();
+        int currentMemberCount = party.getJoinedMemberCount();
+        int newRecruitCount = post.getRecruitCount();
+        party.updateCapacity(newRecruitCount);
 
         // Case 1: 모집 정원을 줄여서, 현재 인원보다 같거나 작아진 경우 -> ACTIVE (모집 완료)
         if (currentMemberCount >= newRecruitCount) {

@@ -199,30 +199,32 @@ public class DataInitializer implements ApplicationRunner {
 
         // ── 6. Party + PartyMembers ──
         // p1: RECRUIT (리더 + 멤버1)
-        Party party1 = new Party(p1.getId(), u1.getId());
+        Party party1 = new Party(p1.getId(), u1.getId(), p1.getRecruitCount());
         partyRepository.save(party1);
+        party1.increaseJoinedMemberCount(1);
         partyMemberRepository.saveAll(List.of(
                 PartyMember.builder().party(party1).user(u1).role(PartyMemberRole.LEADER).build(),
                 PartyMember.builder().party(party1).user(u2).role(PartyMemberRole.MEMBER).build()
         ));
 
         // p2: RECRUIT (리더만)
-        Party party2 = new Party(p2.getId(), u4.getId());
+        Party party2 = new Party(p2.getId(), u4.getId(), p2.getRecruitCount());
         partyRepository.save(party2);
         partyMemberRepository.save(
                 PartyMember.builder().party(party2).user(u4).role(PartyMemberRole.LEADER).build()
         );
 
         // p3: RECRUIT (리더만)
-        Party party3 = new Party(p3.getId(), u5.getId());
+        Party party3 = new Party(p3.getId(), u5.getId(), p3.getRecruitCount());
         partyRepository.save(party3);
         partyMemberRepository.save(
                 PartyMember.builder().party(party3).user(u5).role(PartyMemberRole.LEADER).build()
         );
 
         // p4: ACTIVE (리더 + 멤버 → 풀파티)
-        Party party4 = new Party(p4.getId(), u6.getId());
+        Party party4 = new Party(p4.getId(), u6.getId(), p4.getRecruitCount());
         partyRepository.save(party4);
+        party4.increaseJoinedMemberCount(1);
         party4.activateParty(LocalDateTime.now().plusHours(6));
         p4.updateStatus(PostStatus.ACTIVE);
         partyMemberRepository.saveAll(List.of(
@@ -231,30 +233,32 @@ public class DataInitializer implements ApplicationRunner {
         ));
 
         // p5: RECRUIT (리더만)
-        Party party5 = new Party(p5.getId(), u7.getId());
+        Party party5 = new Party(p5.getId(), u7.getId(), p5.getRecruitCount());
         partyRepository.save(party5);
         partyMemberRepository.save(
                 PartyMember.builder().party(party5).user(u7).role(PartyMemberRole.LEADER).build()
         );
 
         // p6: RECRUIT (리더 + 1명)
-        Party party6 = new Party(p6.getId(), u8.getId());
+        Party party6 = new Party(p6.getId(), u8.getId(), p6.getRecruitCount());
         partyRepository.save(party6);
+        party6.increaseJoinedMemberCount(1);
         partyMemberRepository.saveAll(List.of(
                 PartyMember.builder().party(party6).user(u8).role(PartyMemberRole.LEADER).build(),
                 PartyMember.builder().party(party6).user(u10).role(PartyMemberRole.MEMBER).build()
         ));
 
         // p7: RECRUIT (리더만)
-        Party party7 = new Party(p7.getId(), u10.getId());
+        Party party7 = new Party(p7.getId(), u10.getId(), p7.getRecruitCount());
         partyRepository.save(party7);
         partyMemberRepository.save(
                 PartyMember.builder().party(party7).user(u10).role(PartyMemberRole.LEADER).build()
         );
 
         // p8: RECRUIT (리더 + 2명)
-        Party party8 = new Party(p8.getId(), u11.getId());
+        Party party8 = new Party(p8.getId(), u11.getId(), p8.getRecruitCount());
         partyRepository.save(party8);
+        party8.increaseJoinedMemberCount(2);
         partyMemberRepository.saveAll(List.of(
                 PartyMember.builder().party(party8).user(u11).role(PartyMemberRole.LEADER).build(),
                 PartyMember.builder().party(party8).user(u13).role(PartyMemberRole.MEMBER).build(),
@@ -262,15 +266,16 @@ public class DataInitializer implements ApplicationRunner {
         ));
 
         // p9: RECRUIT (리더만)
-        Party party9 = new Party(p9.getId(), u12.getId());
+        Party party9 = new Party(p9.getId(), u12.getId(), p9.getRecruitCount());
         partyRepository.save(party9);
         partyMemberRepository.save(
                 PartyMember.builder().party(party9).user(u12).role(PartyMemberRole.LEADER).build()
         );
 
         // p10: ACTIVE (리더 + 멤버 → 풀파티)
-        Party party10 = new Party(p10.getId(), u14.getId());
+        Party party10 = new Party(p10.getId(), u14.getId(), p10.getRecruitCount());
         partyRepository.save(party10);
+        party10.increaseJoinedMemberCount(1);
         party10.activateParty(LocalDateTime.now().plusHours(6));
         p10.updateStatus(PostStatus.ACTIVE);
         partyMemberRepository.saveAll(List.of(
@@ -279,15 +284,16 @@ public class DataInitializer implements ApplicationRunner {
         ));
 
         // p11: RECRUIT (리더 + 1명)
-        Party party11 = new Party(p11.getId(), u15.getId());
+        Party party11 = new Party(p11.getId(), u15.getId(), p11.getRecruitCount());
         partyRepository.save(party11);
+        party11.increaseJoinedMemberCount(1);
         partyMemberRepository.saveAll(List.of(
                 PartyMember.builder().party(party11).user(u15).role(PartyMemberRole.LEADER).build(),
                 PartyMember.builder().party(party11).user(u9).role(PartyMemberRole.MEMBER).build()
         ));
 
         // p12: RECRUIT (리더만)
-        Party party12 = new Party(p12.getId(), u9.getId());
+        Party party12 = new Party(p12.getId(), u9.getId(), p12.getRecruitCount());
         partyRepository.save(party12);
         partyMemberRepository.save(
                 PartyMember.builder().party(party12).user(u9).role(PartyMemberRole.LEADER).build()
@@ -303,8 +309,9 @@ public class DataInitializer implements ApplicationRunner {
         p13.updateStatus(PostStatus.CLOSED);
         p14.updateStatus(PostStatus.CLOSED);
 
-        Party party13 = new Party(p13.getId(), u2.getId());
+        Party party13 = new Party(p13.getId(), u2.getId(), p13.getRecruitCount());
         partyRepository.save(party13);
+        party13.increaseJoinedMemberCount(1);
         party13.activateParty(LocalDateTime.now().minusHours(7));
         party13.closeParty();
         partyMemberRepository.saveAll(List.of(
@@ -312,8 +319,9 @@ public class DataInitializer implements ApplicationRunner {
                 PartyMember.builder().party(party13).user(u7).role(PartyMemberRole.MEMBER).build()
         ));
 
-        Party party14 = new Party(p14.getId(), u13.getId());
+        Party party14 = new Party(p14.getId(), u13.getId(), p14.getRecruitCount());
         partyRepository.save(party14);
+        party14.increaseJoinedMemberCount(1);
         party14.activateParty(LocalDateTime.now().minusHours(7));
         party14.closeParty();
         partyMemberRepository.saveAll(List.of(

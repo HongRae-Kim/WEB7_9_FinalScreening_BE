@@ -25,7 +25,6 @@ public interface PartyMemberRepository extends JpaRepository<PartyMember, Long> 
 
     @Query("""
             SELECT pm FROM PartyMember pm
-            JOIN FETCH pm.user
             WHERE pm.party.id = :partyId
               AND pm.user.id IN :userIds
             """)
