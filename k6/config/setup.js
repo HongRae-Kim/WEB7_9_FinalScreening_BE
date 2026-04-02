@@ -3,38 +3,12 @@ import { check, fail } from 'k6';
 
 import {
     BASE_URL,
-    ENABLE_PARTY_WRITE,
-    HAS_AUTH_CREDENTIALS,
-    HAS_CHAT_ROOM_TARGETS,
-    HAS_PARTY_TARGETS,
-    TARGET_USER_IDS,
-    TEST_MODE,
+    IS_CONTENTION_PRESET,
+    LEADER_CREDENTIALS,
+    MEMBER_CREDENTIALS,
+    MIN_WRITE_SUCCESS_SAMPLES,
 } from '../core/env.js';
-
-const PROTECTED_TEST_MODES = new Set(['chat_rooms', 'chat_messages', 'party_members', 'party_write']);
-
-function requiresProtectedAuth() {
-    return PROTECTED_TEST_MODES.has(TEST_MODE) || (TEST_MODE === 'mixed' && HAS_AUTH_CREDENTIALS);
-}
-
-function validateTargets() {
-    const requiresChatRoomId = TEST_MODE === 'chat_messages' || (TEST_MODE === 'mixed' && HAS_AUTH_CREDENTIALS);
-    const requiresPartyId = ['party_members', 'party_write'].includes(TEST_MODE)
-        || (TEST_MODE === 'mixed' && (HAS_AUTH_CREDENTIALS || ENABLE_PARTY_WRITE) && HAS_AUTH_CREDENTIALS);
-    const requiresWriteTargets = TEST_MODE === 'party_write' || (TEST_MODE === 'mixed' && ENABLE_PARTY_WRITE && HAS_AUTH_CREDENTIALS);
-
-    if (requiresChatRoomId && !HAS_CHAT_ROOM_TARGETS) {
-        fail('CHAT_ROOM_ID or TEST_CHAT_ROOM_IDS is required.');
-    }
-
-    if (requiresPartyId && !HAS_PARTY_TARGETS) {
-        fail('PARTY_ID or TEST_PARTY_IDS is required.');
-    }
-
-    if (requiresWriteTargets && TARGET_USER_IDS.length === 0) {
-        fail('TARGET_USER_IDS is required');
-    }
-}
+import { discoverTestData } from '../core/discovery.js';
 
 export function setup() {
     const res = http.get(`${BASE_URL}/actuator/health`);
@@ -47,14 +21,45 @@ export function setup() {
         fail(`health check failed: status=${res.status}, body=${res.body}`);
     }
 
-    if (TEST_MODE === 'auth' && !HAS_AUTH_CREDENTIALS) {
-        fail('auth mode requires TEST_CREDENTIALS or LOGIN_EMAIL and LOGIN_PASSWORD.');
+    if (LEADER_CREDENTIALS.length === 0) {
+        fail('LEADER_CREDENTIALS is required.');
     }
 
-    if (requiresProtectedAuth() && !HAS_AUTH_CREDENTIALS) {
-        fail('Protected API tests require TEST_CREDENTIALS or LOGIN_EMAIL and LOGIN_PASSWORD.');
+    if (MEMBER_CREDENTIALS.length === 0) {
+        fail('MEMBER_CREDENTIALS is required.');
     }
 
-    validateTargets();
-    return { startedAt: new Date().toISOString() };
+    const discovery = discoverTestData();
+
+    if (discovery.authUsers.length === 0) {
+        fail('No authenticated test users could be discovered from the configured credentials.');
+    }
+
+    if (discovery.chatTargets.length === 0) {
+        fail('No chat room targets were discovered. Check seeded chat rooms for the configured accounts.');
+    }
+
+    if (discovery.partyReaderTargets.length === 0) {
+        fail('No party reader targets were discovered. Check seeded parties for the configured accounts.');
+    }
+
+    if (IS_CONTENTION_PRESET && discovery.contentionTargets.length === 0) {
+        fail('No contention write targets were discovered. Check leader/member seed data.');
+    }
+
+    if (!IS_CONTENTION_PRESET && discovery.writeTargets.length === 0) {
+        fail('No realistic write targets were discovered. Check leader/member seed data.');
+    }
+
+    if (!IS_CONTENTION_PRESET && MIN_WRITE_SUCCESS_SAMPLES > 0 && discovery.writeTargets.length < MIN_WRITE_SUCCESS_SAMPLES) {
+        fail(
+            `Insufficient realistic write targets: discovered=${discovery.writeTargets.length}, `
+            + `required=${MIN_WRITE_SUCCESS_SAMPLES}. Re-seed the write target bank before running.`,
+        );
+    }
+
+    return {
+        startedAt: new Date().toISOString(),
+        discovery,
+    };
 }

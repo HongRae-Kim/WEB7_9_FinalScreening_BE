@@ -1,20 +1,42 @@
 #!/bin/sh
 set -eu
 
+PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+export PATH
+
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 usage() {
   cat <<'EOF'
 Usage:
+  ./run.sh run
+  ./run.sh run [label]
   ./run.sh up
   ./run.sh down
-  ./run.sh mixed [profile] [run_id]
-  ./run.sh party [profile] [run_id]
-  ./run.sh capture [run_id]
 
-Docker:
-  docker compose --profile manual run --rm k6
+Required env for current runner:
+  LEADER_CREDENTIALS=email:password[,email:password...]
+  MEMBER_CREDENTIALS=email:password[,email:password...]
+
+Optional env:
+  BASE_URL=http://localhost:8080
+  AUTO_PREPARE_WRITE_BANK=true
 EOF
+}
+
+sanitize_segment() {
+  printf '%s' "$1" \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed 's/[^a-z0-9]/_/g; s/_\{2,\}/_/g; s/^_//; s/_$//'
+}
+
+resolve_preset_name() {
+  if [ ! -f "$SCRIPT_DIR/test-plan.json" ]; then
+    echo "manual"
+    return
+  fi
+
+  jq -r '.preset // "manual"' "$SCRIPT_DIR/test-plan.json" 2>/dev/null || echo "manual"
 }
 
 run_compose() {
@@ -22,10 +44,66 @@ run_compose() {
   docker compose "$@"
 }
 
-run_local() {
-  test_mode=$1
-  load_profile=$2
-  run_id=${3:-}
+bool_is_true() {
+  value=$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')
+  case "$value" in
+    1|true|yes|on)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+read_repo_env_value() {
+  key=$1
+  repo_env="$SCRIPT_DIR/../.env"
+
+  if [ ! -f "$repo_env" ]; then
+    return 1
+  fi
+
+  grep "^${key}=" "$repo_env" | head -n 1 | cut -d= -f2-
+}
+
+prepare_write_bank() {
+  preset_name=$1
+
+  case "$preset_name" in
+    realistic_*|party_write_contention)
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+
+  if ! bool_is_true "${AUTO_PREPARE_WRITE_BANK:-true}"; then
+    return 0
+  fi
+
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "docker command not found. Install Docker or set AUTO_PREPARE_WRITE_BANK=false." >&2
+    exit 1
+  fi
+
+  db_name=${DB_NAME:-$(read_repo_env_value DB_NAME || true)}
+  db_password=${DB_PASSWORD:-$(read_repo_env_value DB_PASSWORD || true)}
+  db_container=${DB_CONTAINER_NAME:-matchduo_db-mysql}
+
+  if [ -z "${db_name:-}" ] || [ -z "${db_password:-}" ]; then
+    echo "DB_NAME/DB_PASSWORD could not be resolved for automatic write-bank preparation." >&2
+    exit 1
+  fi
+
+  echo "Preparing write-bank data for preset: $preset_name"
+  docker exec -i "$db_container" mysql -uroot -p"$db_password" "$db_name" < "$SCRIPT_DIR/sql/load-test-seed.sql"
+  docker exec -i "$db_container" mysql -uroot -p"$db_password" "$db_name" < "$SCRIPT_DIR/sql/reset-party-write.sql"
+}
+
+run_current() {
+  run_label=${1:-}
+  preset_name=$(sanitize_segment "$(resolve_preset_name)")
 
   if ! command -v k6 >/dev/null 2>&1; then
     echo "k6 command not found. Install k6 locally before running host-based load tests." >&2
@@ -38,14 +116,27 @@ run_local() {
     set +a
   fi
 
-  if [ -z "${BASE_URL:-}" ] || [ "${BASE_URL}" = "http://host.docker.internal:8080" ]; then
+  if [ -z "${BASE_URL:-}" ]; then
     BASE_URL="http://localhost:8080"
   fi
 
-  if [ -n "$run_id" ]; then
-    RUN_ID=$run_id
-  elif [ -z "${RUN_ID:-}" ] || [ "${RUN_ID}" = "mixed_run8" ]; then
-    RUN_ID=$(date +%Y%m%d_%H%M%S)
+  prepare_write_bank "$preset_name"
+
+  if [ -z "${RUN_ID:-}" ]; then
+    if ! command -v jq >/dev/null 2>&1; then
+      echo "jq command not found. Install jq locally before running the current k6 runner." >&2
+      exit 1
+    fi
+
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    RUN_ID="${preset_name:-manual}_${timestamp}"
+
+    if [ -n "$run_label" ]; then
+      normalized_label=$(sanitize_segment "$run_label")
+      if [ -n "$normalized_label" ]; then
+        RUN_ID="${preset_name:-manual}_${normalized_label}_${timestamp}"
+      fi
+    fi
   fi
 
   K6_PROMETHEUS_RW_SERVER_URL=${K6_PROMETHEUS_RW_SERVER_URL:-http://localhost:9090/api/v1/write}
@@ -53,9 +144,6 @@ run_local() {
 
   export BASE_URL
   export RUN_ID
-  export TEST_MODE=$test_mode
-  export LOAD_PROFILE=$load_profile
-  export ENABLE_PARTY_WRITE=${ENABLE_PARTY_WRITE:-true}
   export K6_PROMETHEUS_RW_SERVER_URL
   export K6_PROMETHEUS_RW_TREND_STATS
 
@@ -67,43 +155,20 @@ run_local() {
     "$SCRIPT_DIR/main.js"
 }
 
-run_docker_default() {
-  if [ -z "${RUN_ID:-}" ] || [ "${RUN_ID}" = "mixed_run8" ]; then
-    RUN_ID=$(date +%Y%m%d_%H%M%S)
-  fi
-
-  export RUN_ID
-  mkdir -p /work/k6/results
-
-  exec k6 run \
-    -o experimental-prometheus-rw \
-    --summary-export="/work/k6/results/${RUN_ID}.json" \
-    /work/k6/main.js
-}
-
-command=${1:-docker}
+command=${1:-run}
 if [ $# -gt 0 ]; then
   shift
 fi
 
 case "$command" in
-  docker)
-    run_docker_default
+  run)
+    run_current "$@"
     ;;
   up)
     run_compose up -d prometheus grafana
     ;;
   down)
     run_compose stop prometheus grafana
-    ;;
-  mixed)
-    run_local mixed "${1:-high}" "${2:-}"
-    ;;
-  party)
-    run_local party_write "${1:-stress}" "${2:-}"
-    ;;
-  capture)
-    run_local party_write stress "${1:-party_write_host_stress_capture}"
     ;;
   help|-h|--help)
     usage

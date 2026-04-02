@@ -1,17 +1,32 @@
 import http from 'k6/http';
 
-import { authedParams, ensureAuthenticated } from './auth.js';
-import { RUN_ID } from './env.js';
+import { ensureAuthenticated, getAuthCookieHeader } from './auth.js';
+import { RUN_ID, SCENARIO_FAMILY } from './env.js';
+import { recordBusinessOutcome } from './metrics.js';
 import { thinkTime, runStatusChecks } from './utils.js';
 
-export function runGet({ url, endpoint, checkName, authenticated = false }) {
-    if (authenticated) {
-        ensureAuthenticated();
+function requestTags(endpoint) {
+    return {
+        endpoint,
+        scenario_family: SCENARIO_FAMILY,
+    };
+}
+
+export function runGet({ url, endpoint, checkName, credentials }) {
+    if (credentials) {
+        ensureAuthenticated(credentials);
     }
 
     const res = http.get(
         url,
-        authenticated ? authedParams({ endpoint }) : { tags: { endpoint } },
+        credentials
+            ? {
+                headers: {
+                    Cookie: getAuthCookieHeader(),
+                },
+                tags: requestTags(endpoint),
+            }
+            : { tags: requestTags(endpoint) },
     );
 
     runStatusChecks(res, endpoint, checkName, [200], {
@@ -29,12 +44,12 @@ export function runPostJson({
     endpoint,
     body,
     checkName,
+    credentials,
     allowedStatuses,
-    ensureAuth = true,
+    successStatuses = [200],
+    businessStatusMap = {},
 }) {
-    if (ensureAuth) {
-        ensureAuthenticated();
-    }
+    ensureAuthenticated(credentials);
 
     const responseCallback = allowedStatuses?.length
         ? http.expectedStatuses(...allowedStatuses)
@@ -46,9 +61,9 @@ export function runPostJson({
         {
             headers: {
                 'Content-Type': 'application/json',
-                Cookie: authedParams().headers.Cookie,
+                Cookie: getAuthCookieHeader(),
             },
-            tags: { endpoint },
+            tags: requestTags(endpoint),
             ...(responseCallback ? { responseCallback } : {}),
         },
     );
@@ -59,6 +74,10 @@ export function runPostJson({
         url,
         requestBody: body,
     });
+
+    if (successStatuses.length > 0 || Object.keys(businessStatusMap).length > 0) {
+        recordBusinessOutcome(endpoint, res, successStatuses, businessStatusMap);
+    }
 
     thinkTime();
     return res;

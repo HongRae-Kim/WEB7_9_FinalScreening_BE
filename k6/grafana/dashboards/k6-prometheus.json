@@ -1584,7 +1584,7 @@
           "uid": "PBFA97CFB590B2093"
         },
         "definition": "label_values(k6_http_req_duration_avg{run_id=~\"$run_id\"}, scenario)",
-        "description": "Filter by k6 scenario label (matches TEST_MODE outputs).",
+        "description": "Filter by k6 scenario label (matches the active preset output).",
         "hide": 0,
         "includeAll": true,
         "label": "Scenario",

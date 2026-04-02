@@ -45,10 +45,21 @@ SELECT @now, @now, NULL, b'1',
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM user WHERE email = 'loadtest4@example.com');
 
+INSERT INTO user (
+    created_at, updated_at, deleted_at, is_active,
+    email, password, nickname, comment, profile_image, verification_code, nickname_updated_at
+)
+SELECT @now, @now, NULL, b'1',
+       'loadtest5@example.com', @password_hash, 'loadtest5',
+       'load test user 5', NULL, 'VERIFIED', NULL
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM user WHERE email = 'loadtest5@example.com');
+
 SET @user_main = (SELECT id FROM user WHERE email = 'loadtest1@example.com' LIMIT 1);
 SET @user_2 = (SELECT id FROM user WHERE email = 'loadtest2@example.com' LIMIT 1);
 SET @user_3 = (SELECT id FROM user WHERE email = 'loadtest3@example.com' LIMIT 1);
 SET @user_4 = (SELECT id FROM user WHERE email = 'loadtest4@example.com' LIMIT 1);
+SET @user_5 = (SELECT id FROM user WHERE email = 'loadtest5@example.com' LIMIT 1);
 
 -- 2) Game accounts
 INSERT INTO game_account (
@@ -241,65 +252,65 @@ SET @post_12 = (SELECT post_id FROM post WHERE memo = 'LOADTEST_POST_12' LIMIT 1
 -- 4) Parties and leader memberships (mirrors post creation flow)
 INSERT INTO party (
     created_at, updated_at, deleted_at, is_active,
-    closed_at, expires_at, leader_id, post_id, status
+    closed_at, expires_at, leader_id, post_id, status, capacity, joined_member_count
 )
-SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_1, 'RECRUIT'
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_1, 'RECRUIT', 2, 1
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_1);
 
 INSERT INTO party (
     created_at, updated_at, deleted_at, is_active,
-    closed_at, expires_at, leader_id, post_id, status
+    closed_at, expires_at, leader_id, post_id, status, capacity, joined_member_count
 )
-SELECT @now, @now, NULL, b'1', NULL, NULL, @user_2, @post_2, 'RECRUIT'
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_2, @post_2, 'RECRUIT', 2, 1
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_2);
 
 INSERT INTO party (
     created_at, updated_at, deleted_at, is_active,
-    closed_at, expires_at, leader_id, post_id, status
+    closed_at, expires_at, leader_id, post_id, status, capacity, joined_member_count
 )
-SELECT @now, @now, NULL, b'1', NULL, NULL, @user_3, @post_3, 'RECRUIT'
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_3, @post_3, 'RECRUIT', 2, 1
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_3);
 
 INSERT INTO party (
     created_at, updated_at, deleted_at, is_active,
-    closed_at, expires_at, leader_id, post_id, status
+    closed_at, expires_at, leader_id, post_id, status, capacity, joined_member_count
 )
-SELECT @now, @now, NULL, b'1', NULL, NULL, @user_4, @post_4, 'RECRUIT'
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_4, @post_4, 'RECRUIT', 5, 1
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_4);
 
 INSERT INTO party (
     created_at, updated_at, deleted_at, is_active,
-    closed_at, expires_at, leader_id, post_id, status
+    closed_at, expires_at, leader_id, post_id, status, capacity, joined_member_count
 )
-SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_9, 'RECRUIT'
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_9, 'RECRUIT', 3, 1
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_9);
 
 INSERT INTO party (
     created_at, updated_at, deleted_at, is_active,
-    closed_at, expires_at, leader_id, post_id, status
+    closed_at, expires_at, leader_id, post_id, status, capacity, joined_member_count
 )
-SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_10, 'RECRUIT'
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_10, 'RECRUIT', 3, 1
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_10);
 
 INSERT INTO party (
     created_at, updated_at, deleted_at, is_active,
-    closed_at, expires_at, leader_id, post_id, status
+    closed_at, expires_at, leader_id, post_id, status, capacity, joined_member_count
 )
-SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_11, 'RECRUIT'
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_11, 'RECRUIT', 3, 1
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_11);
 
 INSERT INTO party (
     created_at, updated_at, deleted_at, is_active,
-    closed_at, expires_at, leader_id, post_id, status
+    closed_at, expires_at, leader_id, post_id, status, capacity, joined_member_count
 )
-SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_12, 'RECRUIT'
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, @post_12, 'RECRUIT', 3, 1
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party WHERE post_id = @post_12);
 
@@ -351,6 +362,75 @@ INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
 SELECT @now, NULL, 'LEADER', 'JOINED', @party_12, @user_main
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM party_member WHERE party_id = @party_12 AND user_id = @user_main);
+
+-- 4b) Dedicated write-bank posts/parties for realistic write sampling.
+INSERT INTO post (
+    created_at, updated_at, deleted_at, is_active,
+    game_mode, looking_positions, memo, mic, my_position, queue_type, recruit_count, status,
+    game_account_id, user_id
+)
+WITH RECURSIVE write_seq AS (
+    SELECT 1 AS n
+    UNION ALL
+    SELECT n + 1 FROM write_seq WHERE n < 50
+)
+SELECT @now, @now, NULL, b'1',
+       'SUMMONERS_RIFT', JSON_ARRAY('TOP', 'JUNGLE', 'MID', 'ADC'),
+       CONCAT('LOADTEST_WRITE_', LPAD(write_seq.n, 3, '0')),
+       b'1', 'SUPPORT', 'FLEX', 5, 'RECRUIT', @ga_main, @user_main
+FROM write_seq
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM post
+    WHERE memo = CONCAT('LOADTEST_WRITE_', LPAD(write_seq.n, 3, '0'))
+);
+
+INSERT INTO party (
+    created_at, updated_at, deleted_at, is_active,
+    closed_at, expires_at, leader_id, post_id, status, capacity, joined_member_count
+)
+WITH RECURSIVE write_seq AS (
+    SELECT 1 AS n
+    UNION ALL
+    SELECT n + 1 FROM write_seq WHERE n < 50
+)
+SELECT @now, @now, NULL, b'1', NULL, NULL, @user_main, p.post_id, 'RECRUIT', 5, 1
+FROM write_seq
+JOIN post p ON p.memo = CONCAT('LOADTEST_WRITE_', LPAD(write_seq.n, 3, '0'))
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM party
+    WHERE post_id = p.post_id
+);
+
+INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
+WITH RECURSIVE write_seq AS (
+    SELECT 1 AS n
+    UNION ALL
+    SELECT n + 1 FROM write_seq WHERE n < 50
+)
+SELECT @now, NULL, 'LEADER', 'JOINED', party.party_id, @user_main
+FROM write_seq
+JOIN post p ON p.memo = CONCAT('LOADTEST_WRITE_', LPAD(write_seq.n, 3, '0'))
+JOIN party ON party.post_id = p.post_id
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM party_member
+    WHERE party_id = party.party_id
+      AND user_id = @user_main
+);
+
+-- Sync party capacity/joined_member_count with the actual seeded memberships.
+UPDATE party
+JOIN post ON post.post_id = party.post_id
+SET party.capacity = post.recruit_count,
+    party.joined_member_count = (
+        SELECT COUNT(*)
+        FROM party_member pm
+        WHERE pm.party_id = party.party_id
+          AND pm.state = 'JOINED'
+    )
+WHERE post.memo LIKE 'LOADTEST_%';
 
 -- Additional members for the main user's party to support party-member reads.
 INSERT INTO party_member (joined_at, left_at, role, state, party_id, user_id)
@@ -465,7 +545,7 @@ WHERE chat_room_id = @room_1
 -- Final verification snapshot
 SELECT id, email, nickname FROM user ORDER BY id;
 SELECT game_account_id, user_id, game_nickname FROM game_account ORDER BY game_account_id;
-SELECT post_id, user_id, memo, status FROM post WHERE memo LIKE 'LOADTEST_POST_%' ORDER BY post_id;
+SELECT post_id, user_id, memo, status FROM post WHERE memo LIKE 'LOADTEST_POST_%' OR memo LIKE 'LOADTEST_WRITE_%' ORDER BY post_id;
 SELECT party_id, post_id, leader_id, status FROM party ORDER BY party_id;
 SELECT party_member_id, party_id, user_id, role, state FROM party_member ORDER BY party_member_id;
 SELECT chat_room_id, post_id, receiver_id, sender_id FROM chat_room ORDER BY chat_room_id;

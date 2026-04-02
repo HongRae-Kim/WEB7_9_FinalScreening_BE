@@ -1,0 +1,60 @@
+{
+  "preset": "realistic_soak",
+  "baseUrl": "http://localhost:8080",
+  "outputPrefix": "k6",
+  "presets": {
+    "realistic_peak": {
+      "scenarioFamily": "realistic_peak",
+      "partyWritePairSize": 2,
+      "minWriteSuccessSamples": 100,
+      "mix": {
+        "posts_list_public": 0.58,
+        "auth_login": 0.06,
+        "chat_rooms_read": 0.08,
+        "chat_messages_read": 0.16,
+        "party_members_read": 0.08,
+        "party_add_members_write": 0.04
+      },
+      "shape": {
+        "type": "ramping-arrival-rate",
+        "timeUnit": "1s",
+        "stages": [
+          { "target": 30, "duration": "1m" },
+          { "target": 50, "duration": "1m" },
+          { "target": 50, "duration": "2m" },
+          { "target": 20, "duration": "1m" },
+          { "target": 0, "duration": "30s" }
+        ]
+      }
+    },
+    "realistic_soak": {
+      "scenarioFamily": "realistic_soak",
+      "partyWritePairSize": 2,
+      "minWriteSuccessSamples": 100,
+      "mix": {
+        "posts_list_public": 0.58,
+        "auth_login": 0.06,
+        "chat_rooms_read": 0.08,
+        "chat_messages_read": 0.16,
+        "party_members_read": 0.08,
+        "party_add_members_write": 0.04
+      },
+      "shape": {
+        "type": "constant-arrival-rate",
+        "timeUnit": "1s",
+        "rate": 20,
+        "duration": "10m"
+      }
+    },
+    "party_write_contention": {
+      "scenarioFamily": "party_write_contention",
+      "partyWritePairSize": 2,
+      "shape": {
+        "type": "contention",
+        "vus": 30,
+        "iterations": 80,
+        "maxDuration": "4m"
+      }
+    }
+  }
+}

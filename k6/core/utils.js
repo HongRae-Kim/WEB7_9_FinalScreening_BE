@@ -38,3 +38,40 @@ export function runStatusChecks(res, endpoint, checkName, allowedStatuses, conte
 
     return res;
 }
+
+export function uniqueBy(items, getKey) {
+    const seen = new Set();
+
+    return items.filter((item) => {
+        const key = getKey(item);
+        if (seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+        return true;
+    });
+}
+
+export function buildCombinations(values, combinationSize) {
+    if (combinationSize <= 0 || values.length < combinationSize) {
+        return [];
+    }
+
+    if (combinationSize === 1) {
+        return values.map((value) => [value]);
+    }
+
+    const combinations = [];
+
+    for (let index = 0; index <= values.length - combinationSize; index += 1) {
+        const head = values[index];
+        const tailCombinations = buildCombinations(values.slice(index + 1), combinationSize - 1);
+
+        tailCombinations.forEach((tail) => {
+            combinations.push([head, ...tail]);
+        });
+    }
+
+    return combinations;
+}
