@@ -73,3 +73,5 @@ replay_pid*
 # --- k6 artifacts ---
 /k6/results/*
 !/k6/results/.gitkeep
+
+.dbeaver/
