@@ -255,6 +255,19 @@ docker compose up -d
 
 기본 프로필은 `dev`입니다. (`application.yml`의 `spring.profiles.active`)
 
+### Eclipse에서 개발할 때
+
+- 프로젝트는 `Gradle Project`로 import 합니다.
+- JDK는 Java 21로 맞춥니다.
+- Eclipse에 Lombok agent가 설치되어 있어야 합니다.
+- 코드 pull 또는 Gradle 설정 변경 후에는 `Project > Gradle > Refresh Gradle Project`를 먼저 실행합니다.
+- 빌드가 꼬이거나 red mark가 남으면 `Project > Clean` 후 다시 실행합니다.
+- Spring Boot 실행 메인 클래스는 `com.back.matchduo.MatchDuoApplication` 입니다.
+- 테스트는 Eclipse JUnit 실행 또는 Gradle Tasks의 `test`를 사용합니다.
+- 부하테스트(`k6`)는 Eclipse 내부가 아니라 터미널에서 실행합니다.
+
+> 이 프로젝트는 Eclipse에서도 개발 가능하지만, Buildship 자동 동기화에 기대기보다 `Gradle Refresh -> Clean -> Run` 순서로 작업하는 편이 안정적입니다.
+
 ### 5. API 문서 확인
 - 로컬: `http://localhost:8080/swagger-ui/index.html`
 
