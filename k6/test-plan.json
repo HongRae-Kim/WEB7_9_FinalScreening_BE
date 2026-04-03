@@ -1,5 +1,5 @@
 {
-  "preset": "realistic_soak",
+  "preset": "realistic_peak",
   "baseUrl": "http://localhost:8080",
   "outputPrefix": "k6",
   "presets": {
