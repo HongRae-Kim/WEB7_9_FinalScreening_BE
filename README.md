@@ -77,9 +77,9 @@
 ### 4. 부하 테스트 체계 및 검증
 - `k6`, `Prometheus`, `Grafana`를 통해 단일 API / 혼합 시나리오 / 전용 stress 테스트를 구성했습니다.
 - 병목 식별 → 개선 → 동일 계열 재측정으로 효과를 검증했습니다.
-- 현재 공식 결과는 `realistic_peak` 반복 측정 기준으로 사용하고, 상세 수치와 해석은 [부하테스트 및 병목 개선 보고서](load-test/README.md) 에서 관리합니다.
+- 현재 공식 결과는 `realistic_peak` 반복 측정 기준으로 사용하고, 상세 수치와 해석은 [성능테스트 보고서](load-test/README.md) 에서 관리합니다.
 
-상세 내용: [부하테스트 및 병목 개선 보고서](load-test/README.md)
+상세 내용: [성능테스트 보고서](load-test/README.md)
 </details>
 
 ---
