@@ -23,10 +23,10 @@
 
 - `auth_login`의 refresh token 저장 경로를 `MySQL -> Redis`로 전환해 write latency를 `2~5ms`에서 `0.003~0.016ms`로 줄였습니다.
 - `party_add_members`는 배치 조회 및 `saveAll()` 구조로 개선한 뒤 `p95 54.50ms -> 24.44ms`로 약 `55.2%` 개선했습니다.
-- 최신 `mixed_stress_rerun` 기준으로 `141.02 req/s`, 전체 `p95 14.61ms`, 실패율 `0%`를 기록했습니다.
-- `party` write 경로에 `findByIdForUpdate()`를 적용해 성능 개선 이후 드러난 정합성 이슈까지 함께 보강했습니다.
+- 최신 Clean Run의 `realistic_peak peak1~3`에서 `party_add_members success p95 35.76ms / 36.64ms / 29.95ms`, `success count 104`, 실패율 `0%`를 확인했습니다.
+- `party` write 경로에 `findByIdForUpdate()`와 counter 기반 상태 관리 구조를 적용해 성능 개선 이후 드러난 정합성 이슈까지 함께 보강했습니다.
 
-![혼합 시나리오 스트레스 테스트 대시보드](docs/mixed_stress_rerun.png)
+![party_add_members p95 비교](load-test/images/party-add-members-p95.svg)
 
 ---
 
@@ -62,75 +62,22 @@
 ### 1. 인증 로직 개선
 - 초기 병목 후보였던 `auth_login`의 refresh token 저장 경로를 `MySQL -> Redis`로 전환해 DB write 비용을 제거했습니다.
 - `upsertRefreshToken`: `2~5ms` → `0.003 ~ 0.016ms`
-- 인증 API의 남은 주요 비용은 `BCrypt` 비밀번호 검증 구간이며, 보안 수준을 유지하기 위해 Cost Factor는 유지한 채 목표 성능을 `p95 < 700ms`로 관리했습니다.
-- Redis 도입은 저장소 운영 포인트와 만료 정책 관리 비용이 추가되지만, refresh token처럼 짧은 인증 상태에 한정해 사용하고 비즈니스 정합성의 source of truth는 MySQL에 두는 방식으로 trade-off를 관리했습니다.
+- 인증 API의 남은 주요 비용은 `BCrypt` 비밀번호 검증 구간이며, 보안 수준을 유지하는 방향으로 정리했습니다.
 
 ### 2. 파티 초대 쓰기 로직 개선
 - 기존에는 N명의 멤버를 초대할 때 대상별 가입 여부 조회와 유저 조회 및 저장이 반복되어 요청당 쿼리 수와 네트워크 라운드 트립이 증가하는 구조였습니다.
 - 이를 `findAllByPartyIdAndUserIdIn(...)`, `userRepository.findAllById(...)`, `saveAll(...)` 기반의 배치 처리 구조로 변경했습니다.
 - `party_add_members p95`: `54.50ms` → `24.44ms` (`mixed_run6` 대비 최신 `mixed_high_rerun` 기준 약 `55.2%` 개선)
-- 전용 stress 테스트(`party_write_stress_rerun`)에서도 `endpoint p95 18.44ms`, 실패율 `0%`를 유지했습니다.
 
 ### 3. 추가 발견 이슈 및 2차 수정
 - 기존 병목 개선 이후 `party` 도메인의 write 경로를 재점검하면서, 파티 상태 변경과 멤버 변경이 동시에 발생할 때 정합성이 흔들릴 수 있는 지점을 확인했습니다.
-- 이에 따라 `addMembers`, `removeMember`, `closeParty`, `leaveParty`에서 파티 조회를 `findByIdForUpdate()` 기반으로 통일해 동시성 제어를 보강했습니다.
-- 이 수정은 단순 성능 최적화보다 고부하 환경에서 상태 전이와 멤버 변경의 일관성을 보장하기 위한 안정성 강화 작업에 가깝습니다.
+- 이에 따라 `addMembers`, `removeMember`, `closeParty`, `leaveParty`에서 파티 조회를 `findByIdForUpdate()` 기반으로 통일하고, `Party.capacity`, `Party.joinedMemberCount` 기반 상태 관리 구조를 적용했습니다.
+- 이후 최신 Clean Run의 `realistic_peak peak1~3`에서 `party_add_members success p95 35.76ms / 36.64ms / 29.95ms`, `success count 104`, 실패율 `0%`를 확인했습니다.
 
-### 4. 성능 테스트 및 병목 확인
+### 4. 부하 테스트 체계 및 검증
 - `k6`, `Prometheus`, `Grafana`를 통해 단일 API / 혼합 시나리오 / 전용 stress 테스트를 구성했습니다.
 - 병목 식별 → 개선 → 동일 계열 재측정으로 효과를 검증했습니다.
-- 테스트는 최종적으로 `localhost:8080` 기준 host 직접 실행 방식으로 통일했습니다.
-
-### 5. 테스트 환경 정리
-- 테스트 프로필을 H2 기반으로 수정해 외부 의존성 없이 로컬 테스트가 가능하도록 구성했습니다.
-- Redis 저장소는 Testcontainers 기반 통합 테스트로 분리했습니다.
-
-### 최신 재측정 결과 요약
-
-#### 단일 API 재측정
-| Endpoint | avg | p95 | 결과 |
-|----------|----:|----:|------|
-| auth_login | 92.80ms | 112.42ms | PASS |
-| posts_list | 9.69ms | 18.50ms | PASS |
-| chat_rooms | 20.76ms | 29.12ms | PASS |
-| chat_messages | 11.61ms | 20.01ms | PASS |
-| party_members | 15.80ms | 23.77ms | PASS |
-
-#### 혼합 시나리오 부하 테스트 (`mixed_high_rerun`)
-| 지표 | 값 |
-|------|---:|
-| 처리량 | 70.92 req/s |
-| 전체 avg | 11.80ms |
-| 전체 p95 | 21.38ms |
-| auth_login p95 | 138.46ms |
-| party_add_members p95 | 24.44ms |
-| 실패율 | 0% |
-| dropped_iterations | 55 |
-
-#### 혼합 시나리오 스트레스 테스트 (`mixed_stress_rerun`)
-| 지표 | 값 |
-|------|---:|
-| 처리량 | 141.02 req/s |
-| 전체 avg | 7.14ms |
-| 전체 p95 | 14.61ms |
-| auth_login p95 | 108.80ms |
-| party_add_members p95 | 12.46ms |
-| 실패율 | 0% |
-| dropped_iterations | 100 |
-
-#### `party_add_members` 전용 스트레스 테스트 (`party_write_stress_rerun`)
-| 지표 | 값 |
-|------|---:|
-| 처리량 | 53.73 req/s |
-| endpoint avg | 13.30ms |
-| endpoint p95 | 18.44ms |
-| scenario p95 | 21.08ms |
-| 실패율 | 0% |
-| iterations | 4800 |
-
-> `mixed` 시나리오에서 발생한 `dropped_iterations`는 실패 요청이 아니라, 로컬 환경에서 목표 도착률을 순간적으로 모두 소화하지 못한 현상으로 해석했습니다. k6 generator 자원, 애플리케이션 스레드 풀, DB connection pool 경합 가능성을 함께 고려했습니다.
-
-> `party_add_members` 전용 stress 테스트는 동일 파티/대상 유저 조합을 반복 호출하므로, 결과는 success-only insert latency보다 `handled write-path latency`와 안정성 검증에 가깝게 해석했습니다.
+- 현재 공식 결과는 `realistic_peak` 반복 측정 기준으로 사용하고, 상세 수치와 해석은 [부하테스트 및 병목 개선 보고서](load-test/README.md) 에서 관리합니다.
 
 상세 내용: [부하테스트 및 병목 개선 보고서](load-test/README.md)
 </details>
@@ -161,7 +108,7 @@
 ![AWS EC2](https://img.shields.io/badge/AWS_EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white)
 ![AWS S3](https://img.shields.io/badge/AWS_S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![HAProxy](https://img.shields.io/badge/HAProxy-000000?style=for-the-badge&logo=haproxy&logoColor=white)
+![Nginx Proxy Manager](https://img.shields.io/badge/Nginx_Proxy_Manager-F15833?style=for-the-badge&logo=nginxproxymanager&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 
 ### Monitoring & Load Testing
@@ -254,19 +201,6 @@ docker compose up -d
 ```
 
 기본 프로필은 `dev`입니다. (`application.yml`의 `spring.profiles.active`)
-
-### Eclipse에서 개발할 때
-
-- 프로젝트는 `Gradle Project`로 import 합니다.
-- JDK는 Java 21로 맞춥니다.
-- Eclipse에 Lombok agent가 설치되어 있어야 합니다.
-- 코드 pull 또는 Gradle 설정 변경 후에는 `Project > Gradle > Refresh Gradle Project`를 먼저 실행합니다.
-- 빌드가 꼬이거나 red mark가 남으면 `Project > Clean` 후 다시 실행합니다.
-- Spring Boot 실행 메인 클래스는 `com.back.matchduo.MatchDuoApplication` 입니다.
-- 테스트는 Eclipse JUnit 실행 또는 Gradle Tasks의 `test`를 사용합니다.
-- 부하테스트(`k6`)는 Eclipse 내부가 아니라 터미널에서 실행합니다.
-
-> 이 프로젝트는 Eclipse에서도 개발 가능하지만, Buildship 자동 동기화에 기대기보다 `Gradle Refresh -> Clean -> Run` 순서로 작업하는 편이 안정적입니다.
 
 ### 5. API 문서 확인
 - 로컬: `http://localhost:8080/swagger-ui/index.html`
